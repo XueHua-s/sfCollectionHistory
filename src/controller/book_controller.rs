@@ -1,0 +1,16 @@
+use actix_web::{post, web, HttpResponse, Responder};
+
+use crate::service::book_services::BookServices;
+#[post("/add/{book_id}")]
+async fn add_book(book_id: web::Path<i32>) -> impl Responder {
+    match BookServices::add_sf_book(*book_id).await { // Dereference book_id to get the i32 value
+        Ok(book) => HttpResponse::Ok().json(book), // 成功时返回 JSON 响应
+        Err(err) => {
+            HttpResponse::InternalServerError().json(err.to_string())
+        } // 错误时返回错误信息
+    }
+}
+// 配置方法：将所有路由绑定到 App
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::scope("/user").service(add_book)); // 默认路由设置为 /user
+}
