@@ -6,7 +6,7 @@ async fn add_book(book_id: web::Path<i32>) -> impl Responder {
     match BookServices::add_sf_book(*book_id).await { // Dereference book_id to get the i32 value
         Ok(book) => HttpResponse::Ok().json(response::ResponseOk::new(book)), // 成功时返回 JSON 响应
         Err(err) => {
-            HttpResponse::InternalServerError().json(err.to_string())
+            HttpResponse::InternalServerError().json(response::ResponseError::new(err.to_string()))
         } // 错误时返回错误信息
     }
 }
