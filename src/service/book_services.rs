@@ -11,7 +11,7 @@ pub struct BookServices;
 impl BookServices {
     pub async fn add_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
         if Self::has_this_book(book_id).await? {
-            return Err(actix_web::error::ErrorBadRequest("该书本已存在记录"));
+            return Err(actix_web::error::ErrorBadRequest("has_book"));
         }
         let new_book = Self::find_sf_book(book_id).await?;
         let client = client::connect().await.map_err(|e| {

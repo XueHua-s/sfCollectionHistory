@@ -21,6 +21,20 @@ where
     }
 }
 #[derive(Serialize, Deserialize, Debug)]
+pub struct ResponseMsg {
+    code: String,
+    message: String,
+}
+impl ResponseMsg {
+    pub fn new(msg: String) -> Self {
+        // Add return type
+        ResponseMsg {
+            code: "success".to_string(),
+            message: msg.clone(),
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ResponseError {
     code: String,
     error: String,
