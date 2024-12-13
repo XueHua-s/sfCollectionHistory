@@ -64,10 +64,10 @@ impl BookServices {
             // 解析 HTML
             let document = Html::parse_document(&body);
             // 查询书本标题
-            let selector = Selector::parse(".title").unwrap();
+            let selector = Selector::parse("h1.title .text").unwrap();
             if let Some(element) = document.select(&selector).next() {
                 if let Some(tag_value) = element.text().next() {
-                    title.push_str(tag_value);
+                    title.push_str(tag_value.trim());
                 }
             }
             // 查询书本类型和点击量
@@ -77,12 +77,14 @@ impl BookServices {
                     if text.starts_with("类型：") {
                         book_type = text.replace("类型：", "").trim().to_string();
                     } else if text.starts_with("点击：") {
-                        click_count = text
-                            .replace("点击：", "")
-                            .trim()
-                            .parse::<i32>()
-                            .unwrap_or(0);
-                        // You can store click_count if needed, for now, we just extract it
+                        let click_text = text.replace("点击：", "").trim().to_string();
+                        click_count = match click_text.strip_suffix("万") {
+                            Some(value) => (value.trim().parse::<f32>().unwrap_or(0.0) * 10_000.0) as i32,
+                            None => match click_text.strip_suffix("千") {
+                                Some(value) => (value.trim().parse::<f32>().unwrap_or(0.0) * 1_000.0) as i32,
+                                None => click_text.parse::<i32>().unwrap_or(0),
+                            },
+                        };
                     }
                 }
             }
