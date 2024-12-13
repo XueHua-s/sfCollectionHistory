@@ -1,28 +1,41 @@
 use std::env;
 
-use crate::model::book::Book;
-use actix_web;
+use crate::{model::book::Book, mysql::client};
+use actix_web::{self, cookie::time::error};
 use reqwest;
 use scraper::{Html, Selector};
 use serde_json;
+use sqlx;
 use uuid::Uuid;
 pub struct BookServices;
 impl BookServices {
     pub async fn add_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
-        let new_book = Book {
-            id: Some("你好世界".to_string()),
-            b_id: book_id, // Default value, adjust as necessary
-            book_name: String::from("Default Book Name"), // Default value
-            tap_num: 3,
-            book_type: String::from("Default Book Type"), // Default value
-            tags: String::from("Default Tags"),           // Default value
-            like_num: 0,                                  // Default value
-            collect_num: 0,                               // Default value
-            comment_num: 0,                               // Default value
-            comment_long_num: 0,                          // Default value
-            created_time: String::from("2023-01-01T00:00:00Z"), // Default value
-        };
+        if Self::has_this_book(book_id).await? {
+            return Err(actix_web::error::ErrorBadRequest("该书本已存在记录"));
+        }
+        let new_book = Self::find_sf_book(book_id).await?;
         Ok(new_book)
+    }
+    async fn has_this_book(book_id: i32) -> Result<bool, actix_web::Error> {
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+
+        let sql = "SELECT EXISTS(SELECT 1 FROM books WHERE b_id = ?)";
+
+        let record_exists: (bool,) = sqlx::query_as(sql)
+            .bind(book_id)
+            .fetch_one(&*client)
+            .await
+            .map_err(|e| match e {
+                sqlx::Error::RowNotFound => actix_web::error::ErrorNotFound("Book not found"),
+                _ => actix_web::error::ErrorInternalServerError(format!(
+                    "Database query error: {}",
+                    e.to_string()
+                )),
+            })?;
+
+        Ok(record_exists.0)
     }
     async fn find_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
         let base_head_url = env::var("SF_DATA_BASE_URL").expect("未获取到sf接口网址");
@@ -31,7 +44,7 @@ impl BookServices {
         let mut title = String::from("");
         let mut book_type = String::new();
         let mut click_count = 0;
-        let mut tags_string = String::from("");
+        let mut tags_string = String::new();
         let mut like_num = 0;
         let mut collect_num = 0;
         let mut comment_num = 0;
