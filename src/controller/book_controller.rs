@@ -12,5 +12,5 @@ async fn add_book(book_id: web::Path<i32>) -> impl Responder {
 }
 // 配置方法：将所有路由绑定到 App
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/user").service(add_book)); // 默认路由设置为 /user
+    cfg.service(web::scope("/books").service(add_book)); // 默认路由设置为 /user
 }
