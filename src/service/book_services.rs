@@ -94,7 +94,8 @@ impl BookServices {
                     tags.push(tag_value.to_string());
                 }
             }
-            tags_string = tags.join(",");
+            let tags = tags.join(",");
+            tags_string.push_str(&tags);
             // 查询点赞数量
             let like_selector = Selector::parse("#BasicOperation .btn.yellow").unwrap();
             for element in document.select(&like_selector) {
