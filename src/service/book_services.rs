@@ -18,18 +18,22 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
 
-        let sql = "INSERT INTO books (id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)";
         sqlx::query(sql)
             .bind(new_book.id.clone())
             .bind(new_book.b_id) // 使用b_id而不是id
             .bind(&new_book.book_name)
+            .bind(&new_book.cover_url)
             .bind(&new_book.book_type)
             .bind(&new_book.tags)
             .bind(new_book.like_num)
             .bind(new_book.collect_num)
             .bind(new_book.comment_num)
             .bind(new_book.comment_long_num)
-            .bind(new_book.tap_num) // 添加tap_num
+            .bind(new_book.tap_num)
+            .bind(new_book.monthly_pass)
+            .bind(new_book.monthly_ticket_ranking)
+            .bind(new_book.reward_ranking)
             .execute(&*client)
             .await
             .map_err(|e| {
@@ -65,6 +69,7 @@ impl BookServices {
         let base_url = format!("{}{}", base_head_url.clone(), "/Novel/");
         let url = format!("{}{}", base_url, book_id); // Corrected the URL construction
         let mut title = String::from("");
+        let mut cover_url = String::new();
         let mut book_type = String::new();
         let mut click_count = 0;
         let mut tags_string = String::new();
@@ -72,6 +77,9 @@ impl BookServices {
         let mut collect_num = 0;
         let mut comment_num = 0;
         let mut comment_long_num = 0;
+        let mut monthly_pass = 0;
+        let mut monthly_ticket_ranking = 0;
+        let mut reward_ranking = 0;
         // 发送 GET 请求
         let response = reqwest::get(&url)
             .await
@@ -163,6 +171,70 @@ impl BookServices {
                     "Failed to fetch comments",
                 ));
             }
+            // 查询书本封面
+            let cover_selector = Selector::parse(".books-box .left-part .figure .pic img").unwrap();
+            if let Some(cover_element) = document.select(&cover_selector).next() {
+                if let Some(url) = cover_element.value().attr("src") {
+                    cover_url.push_str(url);
+                }
+            } else {
+                return Err(actix_web::error::ErrorInternalServerError(
+                    "Failed to fetch cover image",
+                ));
+            }
+            // 查询今日月票数据
+            let ticket_info_url = format!(
+                "{}{}",
+                base_head_url, "/ajax/ashx/Common.ashx?op=ticketinfo"
+            );
+
+            let ticket_info_response = reqwest::Client::new()
+                .post(&ticket_info_url)
+                .form(&[("nid", book_id.to_string())])
+                .send()
+                .await
+                .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+            if ticket_info_response.status().is_success() {
+                let ticket_data: serde_json::Value = ticket_info_response
+                    .json()
+                    .await
+                    .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+                if ticket_data["status"] == 200 {
+                    monthly_pass = ticket_data["tickets"]["TicketNum"].as_i64().unwrap_or(0) as i32;
+                    monthly_ticket_ranking =
+                        ticket_data["tickets"]["Rank"].as_i64().unwrap_or(0) as i32;
+                }
+            } else {
+                return Err(actix_web::error::ErrorInternalServerError(
+                    "Failed to fetch ticket info",
+                ));
+            }
+            // 查询今日打赏数据
+            let bonus_info_url =
+                format!("{}{}", base_head_url, "/ajax/ashx/Common.ashx?op=bonusinfo");
+
+            let bonus_info_response = reqwest::Client::new()
+                .post(&bonus_info_url)
+                .form(&[("nid", book_id.to_string())])
+                .send()
+                .await
+                .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+            if bonus_info_response.status().is_success() {
+                let bonus_data: serde_json::Value = bonus_info_response
+                    .json()
+                    .await
+                    .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+                if bonus_data["status"] == 200 {
+                    let rank = bonus_data["bonus"]["Rank"].as_i64().unwrap_or(0) as i32;
+                    reward_ranking = rank;
+                }
+            } else {
+                return Err(actix_web::error::ErrorInternalServerError(
+                    "Failed to fetch bonus info",
+                ));
+            }
         } else {
             return Err(actix_web::error::ErrorNotFound("Book not found")); // Return a not found error if the response is not successful
         }
@@ -172,6 +244,7 @@ impl BookServices {
             id: Some(Uuid::new_v4().to_string()), // Use the fetched title instead of a default value
             b_id: book_id,
             book_name: title.clone(),
+            cover_url,
             book_type: book_type.clone(),
             tap_num: click_count,
             tags: tags_string.clone(),
@@ -179,6 +252,9 @@ impl BookServices {
             collect_num,
             comment_num,
             comment_long_num,
+            monthly_pass,
+            monthly_ticket_ranking,
+            reward_ranking,
             created_time: chrono::Utc::now().format("%Y-%m-%d").to_string(), // Automatically generate the current time in YYYY-MM-DD format
         };
         Ok(new_book)

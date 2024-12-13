@@ -7,7 +7,7 @@ async fn add_book(book_id: web::Path<i32>) -> impl Responder {
         Ok(book) => HttpResponse::Ok().json(response::ResponseOk::new(book)), // 成功时返回 JSON 响应
         Err(err) => {
             if err.to_string() == "has_book" {
-                HttpResponse::InternalServerError().json(response::ResponseMsg::new("此书已被收录".to_string()))
+                HttpResponse::Ok().json(response::ResponseMsg::new("此书已被收录".to_string()))
             } else {
                 HttpResponse::InternalServerError().json(response::ResponseError::new(err.to_string()))
             }
