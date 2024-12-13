@@ -31,7 +31,7 @@ impl ResponseError // 添加特征约束 // Specify the type parameter T here
     pub fn new(error: String) -> Self {
         // Add return type
         ResponseError {
-            code: "success".to_string(),
+            code: "error".to_string(),
             error: error.clone(),
         }
     }

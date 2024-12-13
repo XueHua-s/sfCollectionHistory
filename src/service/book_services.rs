@@ -14,8 +14,31 @@ impl BookServices {
             return Err(actix_web::error::ErrorBadRequest("该书本已存在记录"));
         }
         let new_book = Self::find_sf_book(book_id).await?;
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+
+        let sql = "INSERT INTO books (id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)";
+        sqlx::query(sql)
+            .bind(new_book.id.clone())
+            .bind(new_book.b_id) // 使用b_id而不是id
+            .bind(&new_book.book_name)
+            .bind(&new_book.book_type)
+            .bind(&new_book.tags)
+            .bind(new_book.like_num)
+            .bind(new_book.collect_num)
+            .bind(new_book.comment_num)
+            .bind(new_book.comment_long_num)
+            .bind(new_book.tap_num) // 添加tap_num
+            .execute(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database insert error: {}", e))
+            })?;
+
         Ok(new_book)
     }
+
     async fn has_this_book(book_id: i32) -> Result<bool, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
@@ -79,9 +102,13 @@ impl BookServices {
                     } else if text.starts_with("点击：") {
                         let click_text = text.replace("点击：", "").trim().to_string();
                         click_count = match click_text.strip_suffix("万") {
-                            Some(value) => (value.trim().parse::<f32>().unwrap_or(0.0) * 10_000.0) as i32,
+                            Some(value) => {
+                                (value.trim().parse::<f32>().unwrap_or(0.0) * 10_000.0) as i32
+                            }
                             None => match click_text.strip_suffix("千") {
-                                Some(value) => (value.trim().parse::<f32>().unwrap_or(0.0) * 1_000.0) as i32,
+                                Some(value) => {
+                                    (value.trim().parse::<f32>().unwrap_or(0.0) * 1_000.0) as i32
+                                }
                                 None => click_text.parse::<i32>().unwrap_or(0),
                             },
                         };
