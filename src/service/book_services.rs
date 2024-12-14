@@ -9,6 +9,7 @@ use sqlx;
 use uuid::Uuid;
 pub struct BookServices;
 impl BookServices {
+    // 暴露给控制器, 用于收录书本的api
     pub async fn add_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
         if Self::has_this_book(book_id).await? {
             return Err(actix_web::error::ErrorBadRequest("has_book"));
@@ -17,6 +18,7 @@ impl BookServices {
         let _ = Self::insert_sf_book(new_book.clone()).await;
         Ok(new_book)
     }
+    // 将数据插入表中
     pub async fn insert_sf_book(new_book: Book) -> Result<Book, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
@@ -45,6 +47,7 @@ impl BookServices {
             })?;
         Ok(new_book)
     }
+    // 查询这本书存不存在表记录
     async fn has_this_book(book_id: i32) -> Result<bool, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
@@ -66,7 +69,24 @@ impl BookServices {
 
         Ok(record_exists.0)
     }
-    async fn find_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
+    // 查询所有的书本bid
+    pub async fn find_sf_all_bid() -> Result<Vec<i32>, actix_web::Error> {
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+
+        let sql = "SELECT DISTINCT b_id FROM books"; // Use DISTINCT to get unique b_id values
+        let bids: Vec<i32> = sqlx::query_scalar(sql)
+            .fetch_all(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+            })?;
+
+        Ok(bids)
+    }
+    // 爬虫, 爬取这本书的数据
+    pub async fn find_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
         let base_head_url = env::var("SF_DATA_BASE_URL").expect("未获取到sf接口网址");
         let base_url = format!("{}{}", base_head_url.clone(), "/Novel/");
         let url = format!("{}{}", base_url, book_id); // Corrected the URL construction

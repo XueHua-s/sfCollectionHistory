@@ -17,3 +17,5 @@ reqwest = { version = "0.11", features = ["json"] }
 scraper = "0.13"
 # Start Generation Here
 serde_json = "1.0"
+# Start Generation Here
+tokio-cron-scheduler = "0.5"
