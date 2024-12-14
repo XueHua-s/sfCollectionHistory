@@ -111,7 +111,9 @@ impl BookServices {
                 // 本书当前状态超过最大维护时间
                 return Err(actix_web::error::ErrorBadRequest("maintenance_max"));
             }
-            return Ok(book);
+            // 添加记录重新进入维护状态
+            let res = Self::insert_sf_book(book).await?;
+            return Ok(res);
         }
         Err(actix_web::error::ErrorBadRequest("not_has_book"))
     }
