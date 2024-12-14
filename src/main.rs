@@ -13,7 +13,13 @@ async fn main() -> std::io::Result<()> {
     task::spawn_blocking(|| {
         let rt = Runtime::new().unwrap();
         rt.block_on(async {
-            book::schedule_task().await;
+            let mut feature = Vec::new();
+            // 添加定时任务
+            feature.push(book::schedule_task());
+            // 等待定时任务,不要让定时任务关闭
+            for task in feature {
+                task.await;
+            }
         });
     });
     HttpServer::new(|| {
