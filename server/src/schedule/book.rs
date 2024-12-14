@@ -4,8 +4,16 @@ use cron::Schedule;
 use std::str::FromStr;
 use tokio::time::{sleep_until, Duration, Instant};
 async fn push_sf_book_new_data(bid: i32) -> Result<(), Error> {
-    let book = book_services::BookServices::find_sf_book(bid).await?;
-    book_services::BookServices::insert_sf_book(book).await?;
+    let mut book = book_services::BookServices::find_sf_book(bid).await;
+    while book.is_err() {
+        book = book_services::BookServices::find_sf_book(bid).await;
+    }
+    let book = book?;
+    loop {
+        if book_services::BookServices::insert_sf_book(book.clone()).await.is_ok() {
+            break;
+        }
+    }
     Ok(())
 }
 async fn async_fn() -> Result<(), actix_web::Error> {
