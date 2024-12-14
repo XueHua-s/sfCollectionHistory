@@ -375,8 +375,8 @@ impl BookServices {
         }
 
         // 创建Book结构体，并返回Result结果
-        let new_book = Book {
-            id: Some(Uuid::new_v4().to_string()), // Use the fetched title instead of a default value
+        let new_book = Book::from(Book {
+            id: None, // Use the fetched title instead of a default value
             b_id: book_id,
             book_name: title.clone(),
             cover_url,
@@ -391,8 +391,8 @@ impl BookServices {
             monthly_ticket_ranking,
             reward_ranking,
             last_update_time,
-            created_time: chrono::Utc::now().format("%Y-%m-%d").to_string(), // Automatically generate the current time in YYYY-MM-DD format
-        };
+            created_time: String::new(), // Automatically generate the current time in YYYY-MM-DD format
+        });
         Ok(new_book)
     }
 }

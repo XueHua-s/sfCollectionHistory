@@ -34,6 +34,8 @@ pub struct Book {
 impl Book {
     // 重新生成id
     pub fn from(book: Book) -> Book {
+        let current_time = chrono::offset::Local::now();
+        let formatted_time = current_time.format("%Y-%m-%d").to_string();
         Book {
             id: Some(Uuid::new_v4().to_string()),
             cover_url: book.cover_url,
@@ -49,7 +51,7 @@ impl Book {
             monthly_pass: book.reward_ranking,
             monthly_ticket_ranking: book.monthly_ticket_ranking,
             reward_ranking: book.reward_ranking,
-            created_time: book.created_time,
+            created_time: formatted_time.clone(),
             last_update_time: book.last_update_time, // 初始化 last_update_time
         }
     }
