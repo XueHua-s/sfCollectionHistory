@@ -1,5 +1,6 @@
 use crate::{model::book::Book, mysql::client};
 use actix_web::{self};
+use chrono::Datelike;
 use reqwest;
 use scraper::{Html, Selector};
 use serde_json;
@@ -16,6 +17,19 @@ impl BookServices {
         let new_book = Self::find_sf_book(book_id).await?;
         let _ = Self::insert_sf_book(new_book.clone()).await;
         Ok(new_book)
+    }
+    // 暴露给控制器, 用于恢复维护
+    pub async fn to_book_maintenance (book_id: i32) -> Result<Book, actix_web::Error> {
+        if Self::has_this_book(book_id).await? {
+            let book = Self::find_sf_book(book_id).await?;
+            let lash_update_time = chrono::NaiveDate::parse_from_str(&book.last_update_time.clone(), "%Y/%m/%d").unwrap();
+            let current_date = chrono::Local::now().date_naive();
+            if current_date.signed_duration_since(lash_update_time).num_days() > 30 {
+                return Err(actix_web::error::ErrorBadRequest("maintenance_max"));
+            }
+            return Ok(book);
+        }
+        Err(actix_web::error::ErrorBadRequest("not_has_book"))
     }
     // 将数据插入表中
     pub async fn insert_sf_book(new_book: Book) -> Result<Book, actix_web::Error> {
