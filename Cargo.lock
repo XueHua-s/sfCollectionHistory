@@ -342,6 +342,7 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "chrono",
+ "cron",
  "dotenv",
  "futures-util",
  "jsonwebtoken",
@@ -351,8 +352,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "tokio-cron-scheduler",
- "uuid 1.11.0",
+ "uuid",
 ]
 
 [[package]]
@@ -517,12 +517,13 @@ dependencies = [
 
 [[package]]
 name = "cron"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "628a3464535cee4e75af89e8c293bab926deaddfa166553b75029066c846be3f"
+checksum = "e009ed0b762cf7a967a34dfdc67d5967d3f828f12901d37081432c3dd1668f8f"
 dependencies = [
  "chrono",
  "nom 4.1.1",
+ "once_cell",
 ]
 
 [[package]]
@@ -2830,18 +2831,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tokio-cron-scheduler"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3609643364fe27df57e538ba45cf2a4dcf719d833a700a1a75b21ca29c62ee9f"
-dependencies = [
- "chrono",
- "cron",
- "tokio",
- "uuid 0.8.2",
-]
-
-[[package]]
 name = "tokio-macros"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3009,15 +2998,6 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
-
-[[package]]
-name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom 0.2.15",
-]
 
 [[package]]
 name = "uuid"
