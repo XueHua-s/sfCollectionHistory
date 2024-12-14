@@ -34,7 +34,7 @@ pub struct Book {
 impl Book {
     // 重新生成id
     pub fn from(book: Book) -> Book {
-        let current_time = chrono::offset::Local::now();
+        let current_time = chrono::Local::now().date_naive();
         let formatted_time = current_time.format("%Y-%m-%d").to_string();
         Book {
             id: Some(Uuid::new_v4().to_string()),

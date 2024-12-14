@@ -5,7 +5,6 @@ use scraper::{Html, Selector};
 use serde_json;
 use sqlx;
 use std::env;
-use uuid::Uuid;
 pub struct BookServices;
 impl BookServices {
     // 暴露给控制器, 用于收录书本的api
@@ -123,7 +122,7 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
 
-        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)";
+        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         sqlx::query(sql)
             .bind(new_book.id.clone())
             .bind(new_book.b_id) // 使用b_id而不是id
@@ -135,6 +134,7 @@ impl BookServices {
             .bind(new_book.collect_num)
             .bind(new_book.comment_num)
             .bind(new_book.comment_long_num)
+            .bind(&new_book.created_time)
             .bind(new_book.tap_num)
             .bind(new_book.monthly_pass)
             .bind(new_book.monthly_ticket_ranking)
