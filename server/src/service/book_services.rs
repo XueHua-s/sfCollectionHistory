@@ -17,13 +17,98 @@ impl BookServices {
         let _ = Self::insert_sf_book(new_book.clone()).await;
         Ok(new_book)
     }
+    // 查询书本最新记录
+    pub async fn get_book_new_once_detail(book_id: i32) -> Result<Book, actix_web::Error> {
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+
+        // 查询books表中指定bid的最新记录
+        let sql = "
+        SELECT id, b_id, book_name, cover_url, book_type, tap_num, tags, like_num, 
+               collect_num, comment_num, comment_long_num, monthly_pass, 
+               monthly_ticket_ranking, reward_ranking, created_time, last_update_time
+        FROM books
+        WHERE b_id = ?
+        ORDER BY created_time DESC
+        LIMIT 1;
+    ";
+
+        let row: (
+            Option<String>,
+            i32,
+            String,
+            String,
+            String,
+            i32,
+            String,
+            i32,
+            i32,
+            i32,
+            i32,
+            i32,
+            i32,
+            i32,
+            String,
+            String,
+        ) = sqlx::query_as(sql)
+            .bind(book_id)
+            .fetch_one(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+            })?;
+
+        // 将查询结果转换为Book结构体
+        let new_book = Book {
+            id: row.0,
+            b_id: row.1,
+            book_name: row.2,
+            cover_url: row.3,
+            book_type: row.4,
+            tap_num: row.5,
+            tags: row.6,
+            like_num: row.7,
+            collect_num: row.8,
+            comment_num: row.9,
+            comment_long_num: row.10,
+            monthly_pass: row.11,
+            monthly_ticket_ranking: row.12,
+            reward_ranking: row.13,
+            created_time: row.14,
+            last_update_time: row.15,
+        };
+
+        Ok(new_book)
+    }
+
     // 暴露给控制器, 用于恢复维护
-    pub async fn to_book_maintenance (book_id: i32) -> Result<Book, actix_web::Error> {
+    pub async fn to_book_maintenance(book_id: i32) -> Result<Book, actix_web::Error> {
         if Self::has_this_book(book_id).await? {
             let book = Self::find_sf_book(book_id).await?;
-            let lash_update_time = chrono::NaiveDate::parse_from_str(&book.last_update_time.clone(), "%Y/%m/%d").unwrap();
+            let new_record = Self::get_book_new_once_detail(book_id).await?;
+
+            let lash_update_time =
+                chrono::NaiveDate::parse_from_str(&book.last_update_time.clone(), "%Y/%m/%d")
+                    .unwrap();
+            let new_record_time =
+                chrono::NaiveDate::parse_from_str(&new_record.last_update_time.clone(), "%Y/%m/%d")
+                    .unwrap();
             let current_date = chrono::Local::now().date_naive();
-            if current_date.signed_duration_since(lash_update_time).num_days() > 30 {
+            if current_date
+                .signed_duration_since(new_record_time)
+                .num_days()
+                < 30
+            {
+                // 本书处于维护中
+                return Err(actix_web::error::ErrorBadRequest("book_state_maintenance"));
+            }
+            if current_date
+                .signed_duration_since(lash_update_time)
+                .num_days()
+                > 30
+            {
+                // 本书当前状态超过最大维护时间
                 return Err(actix_web::error::ErrorBadRequest("maintenance_max"));
             }
             return Ok(book);
