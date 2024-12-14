@@ -38,7 +38,6 @@ pub async fn schedule_task() {
         // 获取下一个运行时间
         let now = Local::now(); // Use local time instead of Utc
         let upcoming = schedule.upcoming(Local).take(1).next().unwrap(); // Use Local for upcoming time
-        println!("{}", upcoming);
         // 计算需要等待的时间
         let duration = upcoming.signed_duration_since(now).to_std().unwrap();
 
