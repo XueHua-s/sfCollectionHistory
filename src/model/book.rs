@@ -50,6 +50,25 @@ impl Book {
             created_time: book.created_time,
         }
     }
+    pub fn clone(&self) -> Book {
+        Book {
+            id: self.id.clone(),
+            b_id: self.b_id,
+            book_name: self.book_name.clone(),
+            cover_url: self.cover_url.clone(),
+            book_type: self.book_type.clone(),
+            tap_num: self.tap_num,
+            tags: self.tags.clone(),
+            like_num: self.like_num,
+            collect_num: self.collect_num,
+            comment_num: self.comment_num,
+            comment_long_num: self.comment_long_num,
+            monthly_pass: self.monthly_pass,
+            monthly_ticket_ranking: self.monthly_ticket_ranking,
+            reward_ranking: self.reward_ranking,
+            created_time: self.created_time.clone(),
+        }
+    }
     pub fn get_basic(&self) -> BasicBook {
         BasicBook {
             id: self.id.clone().unwrap_or(String::from("你好")), // Extract the value from Option, defaulting to an empty string if None

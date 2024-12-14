@@ -14,6 +14,10 @@ impl BookServices {
             return Err(actix_web::error::ErrorBadRequest("has_book"));
         }
         let new_book = Self::find_sf_book(book_id).await?;
+        let _ = Self::insert_sf_book(new_book.clone()).await;
+        Ok(new_book)
+    }
+    pub async fn insert_sf_book(new_book: Book) -> Result<Book, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
@@ -39,10 +43,8 @@ impl BookServices {
             .map_err(|e| {
                 actix_web::error::ErrorInternalServerError(format!("Database insert error: {}", e))
             })?;
-
         Ok(new_book)
     }
-
     async fn has_this_book(book_id: i32) -> Result<bool, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
