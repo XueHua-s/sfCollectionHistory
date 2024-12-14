@@ -1,11 +1,10 @@
-use std::env;
-
 use crate::{model::book::Book, mysql::client};
 use actix_web::{self};
 use reqwest;
 use scraper::{Html, Selector};
 use serde_json;
 use sqlx;
+use std::env;
 use uuid::Uuid;
 pub struct BookServices;
 impl BookServices {
@@ -24,7 +23,7 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
 
-        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)";
+        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)";
         sqlx::query(sql)
             .bind(new_book.id.clone())
             .bind(new_book.b_id) // 使用b_id而不是id
@@ -40,6 +39,7 @@ impl BookServices {
             .bind(new_book.monthly_pass)
             .bind(new_book.monthly_ticket_ranking)
             .bind(new_book.reward_ranking)
+            .bind(&new_book.last_update_time)
             .execute(&*client)
             .await
             .map_err(|e| {
@@ -69,13 +69,19 @@ impl BookServices {
 
         Ok(record_exists.0)
     }
-    // 查询所有的书本bid
+    // 查询在维护所有的书本bid
     pub async fn find_sf_all_bid() -> Result<Vec<i32>, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
+        // 分组查询最新的创建时间那条, 取最近更新时间 >= 30天的。
+        let sql = "
+           SELECT b_id, MAX(created_time) as max_created_time
+            FROM books
+            WHERE last_update_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            GROUP BY b_id;
+        ";
 
-        let sql = "SELECT DISTINCT b_id FROM books"; // Use DISTINCT to get unique b_id values
         let bids: Vec<i32> = sqlx::query_scalar(sql)
             .fetch_all(&*client)
             .await
@@ -102,6 +108,7 @@ impl BookServices {
         let mut monthly_pass = 0;
         let mut monthly_ticket_ranking = 0;
         let mut reward_ranking = 0;
+        let mut last_update_time = String::new();
         // 发送 GET 请求
         let response = reqwest::get(&url)
             .await
@@ -142,6 +149,12 @@ impl BookServices {
                                 None => click_text.parse::<i32>().unwrap_or(0),
                             },
                         };
+                    } else if text.starts_with("更新：") {
+                        last_update_time = text.replace("更新：", "").trim().to_string();
+                        // 最后更新时间
+                        if let Some(date_part) = last_update_time.split_whitespace().next() {
+                            last_update_time = date_part.to_string();
+                        }
                     }
                 }
             }
@@ -277,6 +290,7 @@ impl BookServices {
             monthly_pass,
             monthly_ticket_ranking,
             reward_ranking,
+            last_update_time,
             created_time: chrono::Utc::now().format("%Y-%m-%d").to_string(), // Automatically generate the current time in YYYY-MM-DD format
         };
         Ok(new_book)

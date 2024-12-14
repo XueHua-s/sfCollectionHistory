@@ -8,6 +8,7 @@ pub struct BasicBook {
     pub book_type: String,
     pub tags: String,
     pub update_time: String,
+    pub last_update_time: String,
 }
 // 结构体转换为json分发特征
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,6 +28,7 @@ pub struct Book {
     pub monthly_ticket_ranking: i32,
     pub reward_ranking: i32,
     pub created_time: String,
+    pub last_update_time: String, // 新增 last_update_time 字段
 }
 
 impl Book {
@@ -48,6 +50,7 @@ impl Book {
             monthly_ticket_ranking: book.monthly_ticket_ranking,
             reward_ranking: book.reward_ranking,
             created_time: book.created_time,
+            last_update_time: book.last_update_time, // 初始化 last_update_time
         }
     }
     pub fn clone(&self) -> Book {
@@ -67,6 +70,7 @@ impl Book {
             monthly_ticket_ranking: self.monthly_ticket_ranking,
             reward_ranking: self.reward_ranking,
             created_time: self.created_time.clone(),
+            last_update_time: self.last_update_time.clone(), // 复制 last_update_time
         }
     }
     pub fn get_basic(&self) -> BasicBook {
@@ -76,7 +80,8 @@ impl Book {
             cover_url: self.cover_url.clone(),
             book_type: self.book_type.clone(),
             tags: self.tags.clone(),
-            update_time: self.created_time.clone(),
+            update_time: self.last_update_time.clone(), // 使用 last_update_time
+            last_update_time: self.last_update_time.clone()
         }
     }
 }
