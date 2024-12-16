@@ -1,6 +1,7 @@
 use crate::service::book_services;
 use actix_web::Error;
 use cron::Schedule;
+use futures::future;
 use std::{str::FromStr, sync::Arc};
 use tokio::{
     sync::Semaphore,
@@ -40,6 +41,7 @@ async fn async_fn() -> Result<(), actix_web::Error> {
             res
         })
     }
+    future::join_all(tasks).await;
     Ok(())
 }
 
@@ -47,7 +49,7 @@ use chrono::Local; // Import Local for local time
 
 pub async fn schedule_task() {
     // 定义一个 cron 表达式，例如每天的 14:30
-    let cron_expr = "00 32 24 * * *"; // 秒 分 时 日 月 星期
+    let cron_expr = "00 39 14 * * *"; // 秒 分 时 日 月 星期
 
     // 解析 cron 表达式
     let schedule = Schedule::from_str(cron_expr).unwrap();
