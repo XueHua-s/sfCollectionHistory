@@ -33,7 +33,7 @@ async fn main() -> std::io::Result<()> {
     })
     // 配置线城池数量
     .workers(4)
-    .bind(("192.168.50.146", 8080))?
+    .bind(("127.0.0.1", 8081))?
     .run()
     .await
 }

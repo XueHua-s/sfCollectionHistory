@@ -2,7 +2,7 @@ const cheerio = require('cheerio')
 const request = require('./request')
 const axios = require("axios");
 const analyzeBooks = async (pageNum) => {
-  const data = await request.get(`/List/default.aspx?tid=-1&&ud=30&PageIndex=${pageNum}`);
+  const data = await request.get(`/List/default.aspx?tid=-1&&ud=-1&PageIndex=${pageNum}`);
   if (data.status === 200) {
     const $ = cheerio.load(data.data);
     const booksLink = $(".bsubcon .Comic_Pic_List>.Conjunction>a");

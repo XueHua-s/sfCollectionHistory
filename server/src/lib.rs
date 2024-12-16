@@ -5,3 +5,4 @@ pub mod service;
 pub mod mysql;
 pub mod my_middleware;
 pub mod schedule;
+pub mod dto;

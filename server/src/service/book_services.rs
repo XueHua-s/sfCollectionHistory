@@ -1,3 +1,4 @@
+use crate::dto::book::PageQueryBookAnalysisRecordsReq;
 use crate::{model::book::Book, mysql::client};
 use actix_web::{self};
 use reqwest;
@@ -22,14 +23,17 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
 
-        // 查询books表中指定bid的最新记录
+        // 查询books表中指定bid的最新记录(通过rid降序排列, rid是自增记录id)
         let sql = "
         SELECT id, b_id, book_name, cover_url, book_type, tap_num, tags, like_num, 
-               collect_num, comment_num, comment_long_num, monthly_pass, 
-               monthly_ticket_ranking, reward_ranking, created_time, last_update_time
+            collect_num, comment_num, comment_long_num, monthly_pass, 
+            monthly_ticket_ranking, reward_ranking, 
+            DATE_FORMAT(created_time, '%Y-%m-%d') as created_time,
+            DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time,
+            r_id
         FROM books
         WHERE b_id = ?
-        ORDER BY created_time DESC
+        ORDER BY r_id DESC
         LIMIT 1;
     ";
 
@@ -80,6 +84,131 @@ impl BookServices {
 
         Ok(new_book)
     }
+    // 分页查询书本分析记录
+    pub async fn page_query_book_analysis_records(
+        query: PageQueryBookAnalysisRecordsReq,
+    ) -> Result<Vec<Book>, actix_web::Error> {
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+        let default_sql = "
+                SELECT id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time
+                FROM books
+                WHERE created_time BETWEEN ? AND ? AND b_id = ?
+                ORDER BY created_time DESC
+                LIMIT ? OFFSET ?;
+            ".to_string();
+        let sql = match query.group_type {
+            Some (1) => default_sql,
+            Some(num) => {
+                let mut goupsql = String::new();
+                match num {
+                    2 => goupsql.push_str("%Y-%m"),
+                    3 => goupsql.push_str("%Y"),
+                    _ => goupsql.push_str("SELECT ..."), 
+                };
+                format!("WITH cte AS (
+                    SELECT 
+                        DATE_FORMAT(created_time, '{}') AS month,
+                        id,
+                        b_id,
+                        book_name,
+                        book_type,
+                        tags,
+                        CAST(like_num AS SIGNED) AS like_num,
+                        CAST(collect_num AS SIGNED) AS collect_num,
+                        CAST(comment_num AS SIGNED) AS comment_num,
+                        CAST(comment_long_num AS SIGNED) AS comment_long_num,
+                        CAST(tap_num AS SIGNED) AS tap_num,
+                        CAST(monthly_pass AS SIGNED) AS monthly_pass,
+                        CAST(monthly_ticket_ranking AS SIGNED) AS monthly_ticket_ranking,
+                        CAST(reward_ranking AS SIGNED) AS reward_ranking,
+                        cover_url,
+                        last_update_time,
+                         ROW_NUMBER() OVER (PARTITION BY DATE_FORMAT(created_time, '{}') ORDER BY r_id DESC) AS rn,
+                        r_id
+                    FROM books
+                    WHERE created_time BETWEEN ? AND ? AND b_id = ?
+                )
+                SELECT
+                    MAX(CASE WHEN rn = 1 THEN id END) AS id,
+                    MAX(CASE WHEN rn = 1 THEN b_id END) AS b_id,
+                    MAX(CASE WHEN rn = 1 THEN book_name END) AS book_name,
+                    MAX(CASE WHEN rn = 1 THEN book_type END) AS book_type,
+                    MAX(CASE WHEN rn = 1 THEN tags END) AS tags,
+                    CAST(SUM(like_num) AS SIGNED) AS like_num,
+                    CAST(SUM(collect_num) AS SIGNED) AS collect_num,
+                    CAST(SUM(comment_num) AS SIGNED) AS comment_num,
+                    CAST(SUM(comment_long_num) AS SIGNED) AS comment_long_num,
+                    CAST(SUM(tap_num) AS SIGNED) AS tap_num,
+                    CAST(SUM(monthly_pass) AS SIGNED) AS monthly_pass,
+                    CAST(SUM(monthly_ticket_ranking) AS SIGNED) AS monthly_ticket_ranking,
+                    CAST(SUM(reward_ranking) AS SIGNED) AS reward_ranking,
+                    MAX(CASE WHEN rn = 1 THEN cover_url END) AS cover_url,
+                    MAX(CASE WHEN rn = 1 THEN DATE_FORMAT(last_update_time, '%Y-%m-%d') END) AS last_update_time,
+                    month AS created_time
+                FROM cte
+                GROUP BY created_time
+                LIMIT ? OFFSET ?;", goupsql, goupsql)
+            },
+            _ => default_sql,
+        };
+    
+        let rows: Vec<Book> = sqlx::query_as::<
+            _,
+            (
+                Option<String>, // id
+                i32,            // b_id
+                String,         // book_name
+                String,         // book_type
+                String,         // tags
+                i32,            // like_num
+                i32,            // collect_num
+                i32,            // comment_num
+                i32,            // comment_long_num
+                i32,         // created_time
+                i32,            // tap_num
+                i32,            // monthly_pass
+                i32,            // monthly_ticket_ranking
+                String,            // reward_ranking
+                String,
+                String,
+            ),
+        >(&sql)
+        .bind(&query.start_date)
+        .bind(&query.end_date)
+        .bind(query.b_id)
+        .bind(query.size)
+        .bind((query.current - 1) * query.size)
+        .fetch_all(&*client)
+        .await
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+        })?
+        .into_iter()
+        .map(|row| Book {
+            id: row.0,
+            b_id: row.1,
+            book_name: row.2,
+            book_type: row.3,
+            tags: row.4,
+            like_num: row.5,
+            collect_num: row.6,
+            comment_num: row.7,
+            comment_long_num: row.8,
+            tap_num: row.9,
+            monthly_pass: row.10,
+            monthly_ticket_ranking: row.11,
+            reward_ranking: row.12,
+            cover_url: row.13,
+            last_update_time: row.14,
+            created_time: row.15,
+        })
+        .collect();
+    
+        Ok(rows)
+    }
+    
 
     // 暴露给控制器, 用于恢复维护
     pub async fn to_book_maintenance(book_id: i32) -> Result<Book, actix_web::Error> {
