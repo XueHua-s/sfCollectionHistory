@@ -49,7 +49,7 @@ use chrono::Local; // Import Local for local time
 
 pub async fn schedule_task() {
     // 定义一个 cron 表达式，例如每天的 14:30
-    let cron_expr = "00 39 14 * * *"; // 秒 分 时 日 月 星期
+    let cron_expr = "00 01 00 * * *"; // 秒 分 时 日 月 星期
 
     // 解析 cron 表达式
     let schedule = Schedule::from_str(cron_expr).unwrap();
