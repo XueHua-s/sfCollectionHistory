@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 // 书本基本信息
 pub struct BasicBook {
@@ -9,9 +10,10 @@ pub struct BasicBook {
     pub tags: String,
     pub update_time: String,
     pub last_update_time: String,
+    pub label_type: String
 }
 // 结构体转换为json分发特征
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, FromRow)]
 pub struct Book {
     pub id: Option<String>,
     pub b_id: i32,
@@ -29,6 +31,7 @@ pub struct Book {
     pub reward_ranking: i32,
     pub created_time: String,
     pub last_update_time: String, // 新增 last_update_time 字段
+    pub label_type: String
 }
 
 impl Book {
@@ -53,6 +56,7 @@ impl Book {
             reward_ranking: book.reward_ranking,
             created_time: formatted_time.clone(),
             last_update_time: book.last_update_time, // 初始化 last_update_time
+            label_type:  book.label_type
         }
     }
     pub fn clone(&self) -> Book {
@@ -73,6 +77,7 @@ impl Book {
             reward_ranking: self.reward_ranking,
             created_time: self.created_time.clone(),
             last_update_time: self.last_update_time.clone(), // 复制 last_update_time
+            label_type: self.label_type.clone()
         }
     }
     pub fn get_basic(&self) -> BasicBook {
@@ -83,7 +88,8 @@ impl Book {
             book_type: self.book_type.clone(),
             tags: self.tags.clone(),
             update_time: self.last_update_time.clone(), // 使用 last_update_time
-            last_update_time: self.last_update_time.clone()
+            last_update_time: self.last_update_time.clone(),
+            label_type: self.label_type.clone()
         }
     }
 }

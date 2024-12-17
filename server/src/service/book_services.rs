@@ -30,59 +30,22 @@ impl BookServices {
             monthly_ticket_ranking, reward_ranking, 
             DATE_FORMAT(created_time, '%Y-%m-%d') as created_time,
             DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time,
-            r_id
+            r_id,
+            label_type
         FROM books
         WHERE b_id = ?
         ORDER BY r_id DESC
         LIMIT 1;
     ";
 
-        let row: (
-            Option<String>,
-            i32,
-            String,
-            String,
-            String,
-            i32,
-            String,
-            i32,
-            i32,
-            i32,
-            i32,
-            i32,
-            i32,
-            i32,
-            String,
-            String,
-        ) = sqlx::query_as(sql)
+        let row: Book = sqlx::query_as(sql)
             .bind(book_id)
             .fetch_one(&*client)
             .await
             .map_err(|e| {
                 actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
             })?;
-
-        // 将查询结果转换为Book结构体
-        let new_book = Book {
-            id: row.0,
-            b_id: row.1,
-            book_name: row.2,
-            cover_url: row.3,
-            book_type: row.4,
-            tap_num: row.5,
-            tags: row.6,
-            like_num: row.7,
-            collect_num: row.8,
-            comment_num: row.9,
-            comment_long_num: row.10,
-            monthly_pass: row.11,
-            monthly_ticket_ranking: row.12,
-            reward_ranking: row.13,
-            created_time: row.14,
-            last_update_time: row.15,
-        };
-
-        Ok(new_book)
+        Ok(row)
     }
     // 分页查询书本分析记录
     pub async fn page_query_book_analysis_records(
@@ -92,7 +55,7 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
         let default_sql = "
-                SELECT id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time
+                SELECT id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time, label_type
                 FROM books
                 WHERE created_time BETWEEN ? AND ? AND b_id = ?
                 ORDER BY created_time DESC;
@@ -125,7 +88,8 @@ impl BookServices {
                         cover_url,
                         last_update_time,
                          ROW_NUMBER() OVER (PARTITION BY DATE_FORMAT(created_time, '{}') ORDER BY r_id DESC) AS rn,
-                        r_id
+                        r_id,
+                        label_type
                     FROM books
                     WHERE created_time BETWEEN ? AND ? AND b_id = ?
                 )
@@ -145,7 +109,8 @@ impl BookServices {
                     CAST(SUM(reward_ranking) AS SIGNED) AS reward_ranking,
                     MAX(CASE WHEN rn = 1 THEN cover_url END) AS cover_url,
                     MAX(CASE WHEN rn = 1 THEN DATE_FORMAT(last_update_time, '%Y-%m-%d') END) AS last_update_time,
-                    month AS created_time
+                    month AS created_time,
+                    MAX(CASE WHEN rn = 1 THEN label_type END) AS label_type
                 FROM cte
                 GROUP BY created_time", goupsql, goupsql)
             },
@@ -154,24 +119,7 @@ impl BookServices {
     
         let rows: Vec<Book> = sqlx::query_as::<
             _,
-            (
-                Option<String>, // id
-                i32,            // b_id
-                String,         // book_name
-                String,         // book_type
-                String,         // tags
-                i32,            // like_num
-                i32,            // collect_num
-                i32,            // comment_num
-                i32,            // comment_long_num
-                i32,         // created_time
-                i32,            // tap_num
-                i32,            // monthly_pass
-                i32,            // monthly_ticket_ranking
-                String,            // reward_ranking
-                String,
-                String,
-            ),
+            Book,
         >(&sql)
         .bind(&query.start_date)
         .bind(&query.end_date)
@@ -182,28 +130,7 @@ impl BookServices {
         .await
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
-        })?
-        .into_iter()
-        .map(|row| Book {
-            id: row.0,
-            b_id: row.1,
-            book_name: row.2,
-            book_type: row.3,
-            tags: row.4,
-            like_num: row.5,
-            collect_num: row.6,
-            comment_num: row.7,
-            comment_long_num: row.8,
-            tap_num: row.9,
-            monthly_pass: row.10,
-            monthly_ticket_ranking: row.11,
-            reward_ranking: row.12,
-            cover_url: row.13,
-            last_update_time: row.14,
-            created_time: row.15,
-        })
-        .collect();
-    
+        })?;
         Ok(rows)
     }
     
@@ -249,7 +176,7 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
 
-        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time, label_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         sqlx::query(sql)
             .bind(new_book.id.clone())
             .bind(new_book.b_id) // 使用b_id而不是id
@@ -267,6 +194,7 @@ impl BookServices {
             .bind(new_book.monthly_ticket_ranking)
             .bind(new_book.reward_ranking)
             .bind(&new_book.last_update_time)
+            .bind(&new_book.label_type)
             .execute(&*client)
             .await
             .map_err(|e| {
@@ -518,7 +446,8 @@ impl BookServices {
             monthly_ticket_ranking,
             reward_ranking,
             last_update_time,
-            created_time: String::new(), // Automatically generate the current time in YYYY-MM-DD format
+            created_time: String::new(),
+            label_type: "".to_string() // Automatically generate the current time in YYYY-MM-DD format
         });
         Ok(new_book)
     }
