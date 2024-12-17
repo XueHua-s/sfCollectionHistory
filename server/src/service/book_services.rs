@@ -95,8 +95,7 @@ impl BookServices {
                 SELECT id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time
                 FROM books
                 WHERE created_time BETWEEN ? AND ? AND b_id = ?
-                ORDER BY created_time DESC
-                LIMIT ? OFFSET ?;
+                ORDER BY created_time DESC;
             ".to_string();
         let sql = match query.group_type {
             Some (1) => default_sql,
@@ -148,8 +147,7 @@ impl BookServices {
                     MAX(CASE WHEN rn = 1 THEN DATE_FORMAT(last_update_time, '%Y-%m-%d') END) AS last_update_time,
                     month AS created_time
                 FROM cte
-                GROUP BY created_time
-                LIMIT ? OFFSET ?;", goupsql, goupsql)
+                GROUP BY created_time", goupsql, goupsql)
             },
             _ => default_sql,
         };
@@ -178,8 +176,8 @@ impl BookServices {
         .bind(&query.start_date)
         .bind(&query.end_date)
         .bind(query.b_id)
-        .bind(query.size)
-        .bind((query.current - 1) * query.size)
+        // .bind(query.size)
+        // .bind((query.current - 1) * query.size)
         .fetch_all(&*client)
         .await
         .map_err(|e| {

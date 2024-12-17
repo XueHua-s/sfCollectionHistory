@@ -6,8 +6,8 @@ pub struct PageQueryBookAnalysisRecordsReq {
     pub start_date: String,
     pub end_date: String,
     pub b_id: i32,
-    pub current: i32, // Use NonZeroI32 to prevent zero values
-    pub size: i32,
+    // pub current: i32, // Use NonZeroI32 to prevent zero values
+    // pub size: i32,
     pub group_type: Option<i32>   // Use NonZeroI32 to prevent zero values
 }
 impl PageQueryBookAnalysisRecordsReq {
@@ -38,8 +38,8 @@ impl PageQueryBookAnalysisRecordsReq {
         Ok(PageQueryBookAnalysisRecordsReq {
             start_date: formatted_start_date, // Use formatted start date
             end_date: formatted_end_date,     // Use formatted end date
-            current: req.current,
-            size: req.size,
+            // current: req.current,
+            // size: req.size,
             b_id: req.b_id,
             group_type,
         })
