@@ -61,13 +61,13 @@ impl BookServices {
                 ORDER BY created_time DESC;
             ".to_string();
         let sql = match query.group_type {
-            Some (1) => default_sql,
+            Some(1) => default_sql,
             Some(num) => {
                 let mut goupsql = String::new();
                 match num {
                     2 => goupsql.push_str("%Y-%m"),
                     3 => goupsql.push_str("%Y"),
-                    _ => goupsql.push_str("SELECT ..."), 
+                    _ => goupsql.push_str("SELECT ..."),
                 };
                 format!("WITH cte AS (
                     SELECT 
@@ -113,27 +113,23 @@ impl BookServices {
                     MAX(CASE WHEN rn = 1 THEN label_type END) AS label_type
                 FROM cte
                 GROUP BY created_time", goupsql, goupsql)
-            },
+            }
             _ => default_sql,
         };
-    
-        let rows: Vec<Book> = sqlx::query_as::<
-            _,
-            Book,
-        >(&sql)
-        .bind(&query.start_date)
-        .bind(&query.end_date)
-        .bind(query.b_id)
-        // .bind(query.size)
-        // .bind((query.current - 1) * query.size)
-        .fetch_all(&*client)
-        .await
-        .map_err(|e| {
-            actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
-        })?;
+
+        let rows: Vec<Book> = sqlx::query_as::<_, Book>(&sql)
+            .bind(&query.start_date)
+            .bind(&query.end_date)
+            .bind(query.b_id)
+            // .bind(query.size)
+            // .bind((query.current - 1) * query.size)
+            .fetch_all(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+            })?;
         Ok(rows)
     }
-    
 
     // 暴露给控制器, 用于恢复维护
     pub async fn to_book_maintenance(book_id: i32) -> Result<Book, actix_web::Error> {
@@ -249,7 +245,9 @@ impl BookServices {
     // 爬虫, 爬取这本书的数据
     pub async fn find_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
         let base_head_url = env::var("SF_DATA_BASE_URL").expect("未获取到sf接口网址");
+        let mb_head_url = env::var("SF_MB_BASE_URL").expect("未获取到sf接口网址");
         let base_url = format!("{}{}", base_head_url.clone(), "/Novel/");
+        let label_base_url = format!("{}{}", mb_head_url, "/b/");
         let url = format!("{}{}", base_url, book_id); // Corrected the URL construction
         let mut title = String::from("");
         let mut cover_url = String::new();
@@ -264,6 +262,7 @@ impl BookServices {
         let mut monthly_ticket_ranking = 0;
         let mut reward_ranking = 0;
         let mut last_update_time = String::new();
+        let mut label_type = String::new();
         // 发送 GET 请求
         let response = reqwest::get(&url)
             .await
@@ -425,6 +424,37 @@ impl BookServices {
                     "Failed to fetch bonus info",
                 ));
             }
+            // 爬取移动端数据
+            let label_info_url = format!("{}{}", label_base_url, book_id);
+            let label_info_response = reqwest::get(&label_info_url)
+                .await
+                .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
+            if label_info_response.status().is_success() {
+                let label_info_body = label_info_response
+                    .text()
+                    .await
+                    .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+                // 解析征文类型
+                let document = Html::parse_document(&label_info_body);
+                let selector = Selector::parse("ul.book_info2").unwrap();
+
+                if let Some(element) = document.select(&selector).next() {
+                    let label_selector = Selector::parse("label").unwrap();
+                    if let Some(label_element) = element.select(&label_selector).next() {
+                        label_type = label_element
+                            .text()
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                            .trim()
+                            .to_string();
+                    }
+                }
+            } else {
+                return Err(actix_web::error::ErrorInternalServerError(
+                    "Failed to fetch label info",
+                ));
+            }
         } else {
             return Err(actix_web::error::ErrorNotFound("Book not found")); // Return a not found error if the response is not successful
         }
@@ -447,7 +477,7 @@ impl BookServices {
             reward_ranking,
             last_update_time,
             created_time: String::new(),
-            label_type: "".to_string() // Automatically generate the current time in YYYY-MM-DD format
+            label_type: label_type.clone(), // Automatically generate the current time in YYYY-MM-DD format
         });
         Ok(new_book)
     }
