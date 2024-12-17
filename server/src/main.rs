@@ -5,9 +5,26 @@ use blog::modules;
 use tokio::task;
 use tokio::runtime::Runtime;
 use blog::schedule::book;
+use env_logger;
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
+    #[cfg(debug_assertions)]
+    {
+        // 在 debug 模式下，初始化日志到控制台
+        env_logger::init();
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        // 在 release 模式下，初始化日志到文件
+        let file = File::create("app.log").unwrap();
+        Builder::new()
+            .filter(None, LevelFilter::Info)
+            .write_style(env_logger::WriteStyle::Always)
+            .target(env_logger::Target::Pipe(Box::new(file)))
+            .init();
+    }
     // 创建定时任务线程
     // 在阻塞任务中启动新的 Tokio 运行时
     task::spawn_blocking(|| {
