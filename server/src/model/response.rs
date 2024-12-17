@@ -24,13 +24,15 @@ where
 pub struct ResponseMsg {
     code: String,
     message: String,
+    msg_code: String
 }
 impl ResponseMsg {
-    pub fn new(msg: String) -> Self {
+    pub fn new(msg: String, status: String) -> Self {
         // Add return type
         ResponseMsg {
             code: "success".to_string(),
-            message: msg.clone(),
+            message: msg,
+            msg_code: status
         }
     }
 }

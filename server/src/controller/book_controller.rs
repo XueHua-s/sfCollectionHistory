@@ -10,7 +10,7 @@ async fn add_book(book_id: web::Path<i32>) -> impl Responder {
         Ok(book) => HttpResponse::Ok().json(response::ResponseOk::new(book)), // 成功时返回 JSON 响应
         Err(err) => {
             if err.to_string() == "has_book" {
-                HttpResponse::Ok().json(response::ResponseMsg::new("此书已被收录".to_string()))
+                HttpResponse::Ok().json(response::ResponseMsg::new("此书已被收录".to_string(), err.to_string()))
             } else {
                 HttpResponse::InternalServerError()
                     .json(response::ResponseError::new(err.to_string()))
@@ -55,7 +55,26 @@ async fn query_book_analysis_records(
         } // 返回请求验证错误信息
     }
 }
-
+// 恢复维护
+#[post("/maintenance/{book_id}")]
+async fn to_book_maintenance (book_id: web::Path<i32>) -> impl Responder {
+    match BookServices::to_book_maintenance(*book_id).await {
+        // Dereference book_id to get the i32 value
+        Ok(book) => HttpResponse::Ok().json(response::ResponseOk::new(book)), // 成功时返回 JSON 响应
+        Err(err) => {
+            if err.to_string() == "not_has_book" {
+                HttpResponse::Ok().json(response::ResponseMsg::new("未收录, 请先提交收录。".to_string(), err.to_string()))
+            } else if err.to_string() == "book_state_maintenance" {
+                HttpResponse::Ok().json(response::ResponseMsg::new("该书处于维护中。".to_string(), err.to_string()))
+            } else if err.to_string() == "maintenance_max" {
+                HttpResponse::Ok().json(response::ResponseMsg::new("已太监, 不维护, 请先恢复正常更新。".to_string(), err.to_string()))
+            } else {
+                HttpResponse::InternalServerError()
+                    .json(response::ResponseError::new(err.to_string()))
+            }
+        } // 错误时返回错误信息
+    }
+}
 // 配置方法：将所有路由绑定到 App
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -63,6 +82,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_book)
             .service(get_all_bid)
             .service(get_book_detail)
-            .service(query_book_analysis_records),
+            .service(query_book_analysis_records)
+            .service(to_book_maintenance)
     ); // 默认路由设置为 /user
 }

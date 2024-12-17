@@ -141,7 +141,7 @@ impl BookServices {
                 chrono::NaiveDate::parse_from_str(&book.last_update_time.clone(), "%Y/%m/%d")
                     .unwrap();
             let new_record_time =
-                chrono::NaiveDate::parse_from_str(&new_record.last_update_time.clone(), "%Y/%m/%d")
+                chrono::NaiveDate::parse_from_str(&new_record.last_update_time.clone(), "%Y-%m-%d")
                     .unwrap();
             let current_date = chrono::Local::now().date_naive();
             if current_date
