@@ -52,3 +52,31 @@ impl PageQueryBookAnalysisRecordsReq {
     }
 }
 // 分页查询排名榜用的dto
+#[derive(Serialize, Deserialize)]
+pub struct PagingQueryRankingDto {
+    pub current: i32,
+    pub size: i32,
+    pub book_name: String,
+    pub sort_type: String,
+    pub label_type: String,
+}
+impl PagingQueryRankingDto {
+    pub fn validate_req(
+        req: PagingQueryRankingDto,
+    ) -> Result<PagingQueryRankingDto, String> {
+        let valid_sort_types = vec![
+            "like_num",
+            "collect_num",
+            "comment_num",
+            "comment_long_num",
+            "tap_num",
+            "monthly_pass",
+            "monthly_ticket_ranking",
+            "reward_ranking",
+        ];
+        if !valid_sort_types.contains(&req.sort_type.as_str()) {
+            return Err("sort_type 必须是 like_num、collect_num、comment_num、comment_long_num、tap_num、monthly_pass、monthly_ticket_ranking 或 reward_ranking".to_string());
+        }
+        Ok(req)
+    }
+}
