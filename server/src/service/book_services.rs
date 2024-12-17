@@ -99,18 +99,19 @@ impl BookServices {
                     MAX(CASE WHEN rn = 1 THEN book_name END) AS book_name,
                     MAX(CASE WHEN rn = 1 THEN book_type END) AS book_type,
                     MAX(CASE WHEN rn = 1 THEN tags END) AS tags,
-                    CAST(SUM(like_num) AS SIGNED) AS like_num,
-                    CAST(SUM(collect_num) AS SIGNED) AS collect_num,
-                    CAST(SUM(comment_num) AS SIGNED) AS comment_num,
-                    CAST(SUM(comment_long_num) AS SIGNED) AS comment_long_num,
-                    CAST(SUM(tap_num) AS SIGNED) AS tap_num,
-                    CAST(SUM(monthly_pass) AS SIGNED) AS monthly_pass,
-                    CAST(SUM(monthly_ticket_ranking) AS SIGNED) AS monthly_ticket_ranking,
-                    CAST(SUM(reward_ranking) AS SIGNED) AS reward_ranking,
+                    MAX(like_num) AS like_num,
+                    MAX(collect_num) AS collect_num,
+                    MAX(comment_num) AS comment_num,
+                    MAX(comment_long_num) AS comment_long_num,
+                    MAX(tap_num) AS tap_num,
+                    MAX(monthly_pass) AS monthly_pass,
+                    MAX(monthly_ticket_ranking) AS monthly_ticket_ranking,
+                    MAX(reward_ranking) AS reward_ranking,
                     MAX(CASE WHEN rn = 1 THEN cover_url END) AS cover_url,
                     MAX(CASE WHEN rn = 1 THEN DATE_FORMAT(last_update_time, '%Y-%m-%d') END) AS last_update_time,
                     month AS created_time,
                     MAX(CASE WHEN rn = 1 THEN label_type END) AS label_type
+
                 FROM cte
                 GROUP BY created_time", goupsql, goupsql)
             }
