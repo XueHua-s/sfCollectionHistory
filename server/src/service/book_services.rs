@@ -437,7 +437,7 @@ impl BookServices {
                     .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
                 // 解析征文类型
                 let document = Html::parse_document(&label_info_body);
-                let selector = Selector::parse("ul.book_info2").unwrap();
+                let selector = Selector::parse("ul.book_info").unwrap();
 
                 if let Some(element) = document.select(&selector).next() {
                     let label_selector = Selector::parse("label").unwrap();
