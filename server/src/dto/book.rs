@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
+// 查询数据分析用的参数dto
 pub struct PageQueryBookAnalysisRecordsReq {
     pub start_date: String,
     pub end_date: String,
@@ -50,3 +51,4 @@ impl PageQueryBookAnalysisRecordsReq {
         })
     }
 }
+// 分页查询排名榜用的dto

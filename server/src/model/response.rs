@@ -52,3 +52,38 @@ impl ResponseError // 添加特征约束 // Specify the type parameter T here
         }
     }
 }
+// 分页响应结构体
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ResponsPagerList<T>
+where
+    T: serde::Serialize, // 添加特征约束 // Specify the type parameter T here
+{
+    current: i32,
+    size: i32,
+    list: Vec<T>,
+    total_num: i32,
+    total_page: i32
+}
+pub struct ResponsPagerListFrom<T>
+where
+    T: serde::Serialize, // 添加特征约束 // Specify the type parameter T here
+{
+    current: i32,
+    size: i32,
+    list: Vec<T>,
+    total_num: i32,
+}
+impl<T> ResponsPagerList<T>
+where
+    T: serde::Serialize, // 添加特征约束 // Specify the type parameter T here
+{
+    pub fn new (pagers: ResponsPagerListFrom<T>) -> Self {
+        ResponsPagerList {
+            current: pagers.current,
+            size: pagers.size,
+            total_num: pagers.total_num,
+            total_page:  (pagers.total_num as f64 / pagers.size as f64).ceil() as i32,
+            list: pagers.list
+        }
+    }
+}
