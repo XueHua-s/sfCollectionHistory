@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
             .configure(modules::configure)
     })
     // 配置线城池数量
-    .workers(4)
+    // .workers(4)
     .bind(("192.168.50.146", 8080))?
     .run()
     .await
