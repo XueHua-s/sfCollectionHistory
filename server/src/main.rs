@@ -45,7 +45,9 @@ async fn main() -> std::io::Result<()> {
                 header::ACCESS_CONTROL_ALLOW_ORIGIN,
                 HeaderValue::from_static("*"),
             )))
-            .wrap(middleware::Logger::default())
+            .wrap(middleware::Logger::new(
+                "ip: %a \"%r\" %s %b \"%{User-Agent}i\" %Dms"
+            ))
             .configure(modules::configure)
     })
     // 配置线城池数量
