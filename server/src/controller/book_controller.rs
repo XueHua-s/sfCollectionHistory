@@ -1,4 +1,4 @@
-use crate::dto::book::PageQueryBookAnalysisRecordsReq;
+use crate::dto::book::{PageQueryBookAnalysisRecordsReq, PagingQueryRankingDto};
 use crate::model::response;
 use crate::service::book_services::BookServices;
 use actix_web::{get, post, web, HttpResponse, Responder};
@@ -38,7 +38,7 @@ async fn get_book_detail(book_id: web::Path<i32>) -> impl Responder {
         } // 错误时返回错误信息
     }
 }
-// 查询书本记录记录
+// 时间条件查询书本数据记录
 #[post("/analysis/records")]
 async fn query_book_analysis_records(
     req: web::Json<PageQueryBookAnalysisRecordsReq>,
@@ -46,6 +46,21 @@ async fn query_book_analysis_records(
     match PageQueryBookAnalysisRecordsReq::validate_req(req.into_inner()) {
         Ok(query) => match BookServices::page_query_book_analysis_records(query).await {
             Ok(book) => HttpResponse::Ok().json(response::ResponseOk::new(book)), // 成功时返回 JSON 响应
+            Err(err) => {
+                HttpResponse::InternalServerError().json(response::ResponseError::new(err.to_string()))
+            } // 错误时返回错误信息
+        },
+        Err(validation_err) => {
+            HttpResponse::BadRequest().json(response::ResponseError::new(validation_err))
+        } // 返回请求验证错误信息
+    }
+}
+// 查询书本排行记录
+#[post("/rank/records")]
+async fn paging_query_ranking (req: web::Json<PagingQueryRankingDto>) -> impl Responder {
+    match PagingQueryRankingDto::validate_req(req.into_inner()) {
+        Ok(query) => match BookServices::query_page_paging_rank(query).await {
+            Ok(ranks_list) => HttpResponse::Ok().json(response::ResponseOk::new(ranks_list)), // 成功时返回 JSON 响应
             Err(err) => {
                 HttpResponse::InternalServerError().json(response::ResponseError::new(err.to_string()))
             } // 错误时返回错误信息
@@ -84,5 +99,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(get_book_detail)
             .service(query_book_analysis_records)
             .service(to_book_maintenance)
+            .service(paging_query_ranking)
     ); // 默认路由设置为 /user
 }
