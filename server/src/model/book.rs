@@ -1,6 +1,28 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
+// 结构体转换为json分发特征
+#[derive(Serialize, Deserialize, Debug, FromRow)]
+pub struct BookRank {
+    pub id: String,
+    pub b_id: i32,
+    pub book_name: String,
+    pub rank: i32,
+    pub cover_url: String,
+    pub book_type: String,
+    pub tap_num: i32,
+    pub tags: String,
+    pub like_num: i32,
+    pub collect_num: i32,
+    pub comment_num: i32,
+    pub comment_long_num: i32,
+    pub monthly_pass: i32,
+    pub monthly_ticket_ranking: i32,
+    pub reward_ranking: i32,
+    pub created_time: String,
+    pub last_update_time: String, // 新增 last_update_time 字段
+    pub label_type: String
+}
 // 书本基本信息
 pub struct BasicBook {
     pub id: String,

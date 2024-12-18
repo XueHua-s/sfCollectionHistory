@@ -1,4 +1,7 @@
+use crate::dto;
 use crate::dto::book::PageQueryBookAnalysisRecordsReq;
+use crate::model::book::BookRank;
+use crate::model::response::{ResponsPagerList, ResponsPagerListFrom};
 use crate::{model::book::Book, mysql::client};
 use actix_web::{self};
 use reqwest;
@@ -47,7 +50,7 @@ impl BookServices {
             })?;
         Ok(row)
     }
-    // 分页查询书本分析记录
+    // 时间查询书本分析记录
     pub async fn page_query_book_analysis_records(
         query: PageQueryBookAnalysisRecordsReq,
     ) -> Result<Vec<Book>, actix_web::Error> {
@@ -131,7 +134,96 @@ impl BookServices {
             })?;
         Ok(rows)
     }
+    // 分页查询书本排行榜
+    pub async fn query_page_paging_rank(
+        query: dto::book::PagingQueryRankingDto,
+    ) -> Result<ResponsPagerList<BookRank>, actix_web::Error> {
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+        let base_query = "WITH LatestBooks AS (
+                SELECT 
+                    *,
+                    ROW_NUMBER() OVER (PARTITION BY b_id ORDER BY r_id DESC) AS rn
+                FROM 
+                    books
+            ),
+            LabelBooks AS (
+                SELECT * FROM LatestBooks WHERE label_type LIKE ?
+            ),
+            RankedBooks AS (
+                SELECT 
+                    *,
+                    RANK() OVER (ORDER BY like_num DESC) AS `rank`
+                FROM 
+                    LabelBooks
+                WHERE 
+                    rn = 1
+            )"
+        .to_string();
+        let mut list_sql = base_query.clone();
+        list_sql.push_str(
+            "
+            SELECT 
+                id, 
+                b_id, 
+                book_name, 
+                book_type, 
+                `rank`,
+                tags, 
+                like_num, 
+                collect_num, 
+                comment_num, 
+                comment_long_num, 
+                created_time, 
+                tap_num, 
+                cover_url, 
+                monthly_pass, 
+                monthly_ticket_ranking, 
+                reward_ranking, 
+                last_update_time, 
+                label_type
+            FROM 
+                RankedBooks
+            WHERE 
+                book_name LIKE ?
+            LIMIT ? OFFSET ?;",
+        );
+        let rows: Vec<BookRank> = sqlx::query_as::<_, BookRank>(&list_sql)
+            .bind(format!("%{}%", query.label_type)) // Correctly bind the label_type with wildcard
+            .bind(format!("%{}%", query.book_name)) // Correctly bind the book_name with wildcard
+            .bind(query.size)
+            .bind((query.current - 1) * query.size)
+            .fetch_all(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+            })?;
+        let mut total_num_query = base_query.clone();
+        total_num_query.push_str(
+            "SELECT 
+            COUNT(*) AS total
+        FROM 
+            RankedBooks
+        WHERE 
+            book_name LIKE ?;",
+        );
+        let total_num: i32 = sqlx::query_scalar(&total_num_query)
+            .bind(format!("%{}%", query.label_type))
+            .bind(format!("%{}%", query.book_name))
+            .fetch_one(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+            })?;
 
+        Ok(ResponsPagerList::new(ResponsPagerListFrom {
+            current: query.current,
+            size: query.size,
+            list: rows,
+            total_num: total_num as i32, // Convert to i32 for the response
+        }))
+    }
     // 暴露给控制器, 用于恢复维护
     pub async fn to_book_maintenance(book_id: i32) -> Result<Book, actix_web::Error> {
         if Self::has_this_book(book_id).await? {

@@ -58,20 +58,20 @@ pub struct ResponsPagerList<T>
 where
     T: serde::Serialize, // 添加特征约束 // Specify the type parameter T here
 {
-    current: i32,
-    size: i32,
-    list: Vec<T>,
-    total_num: i32,
-    total_page: i32
+    pub current: i32,
+    pub size: i32,
+    pub list: Vec<T>,
+    pub total_num: i32,
+    pub total_page: i32
 }
 pub struct ResponsPagerListFrom<T>
 where
     T: serde::Serialize, // 添加特征约束 // Specify the type parameter T here
 {
-    current: i32,
-    size: i32,
-    list: Vec<T>,
-    total_num: i32,
+    pub current: i32,
+    pub size: i32,
+    pub list: Vec<T>,
+    pub total_num: i32,
 }
 impl<T> ResponsPagerList<T>
 where
