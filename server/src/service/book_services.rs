@@ -164,7 +164,7 @@ impl BookServices {
             RankedBooks AS (
                 SELECT 
                     *,
-                    RANK() OVER (ORDER BY {} {}) AS `rank`
+                    ROW_NUMBER() OVER (ORDER BY {} {}) AS `rank`
                 FROM 
                     LabelBooks
                 WHERE 
