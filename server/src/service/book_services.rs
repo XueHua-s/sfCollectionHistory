@@ -4,6 +4,7 @@ use crate::model::book::BookRank;
 use crate::model::response::{ResponsPagerList, ResponsPagerListFrom};
 use crate::{model::book::Book, mysql::client};
 use actix_web::{self};
+use regex::Regex;
 use reqwest;
 use scraper::{Html, Selector};
 use serde_json;
@@ -367,7 +368,7 @@ impl BookServices {
         Ok(labels)
     }
     // 关键词搜索主站的书本
-    pub async fn keyword_search_master_books(keyword: String) -> Result<actix_web::web::Json<serde_json::Value>, actix_web::Error> {
+    pub async fn keyword_search_master_books(keyword: String) -> Result<actix_web::web::Json<Vec<serde_json::Value>>, actix_web::Error> {
         let base_head_url = env::var("SF_DATA_BASE_URL").expect("未获取到sf接口网址");
         let api_url = format!("{}/ajax/ashx/GetRelateWord.ashx?t=1", base_head_url);
         
@@ -380,8 +381,21 @@ impl BookServices {
             .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
 
         if response.status().is_success() {
-            let json_response: serde_json::Value = response.json().await.map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
-            Ok(actix_web::web::Json(json_response))
+            let json_response: Vec<serde_json::Value> = response.json().await.map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+            let re = Regex::new(r"/(\d+)").unwrap(); // Regex to extract bid from URL
+            let result: Vec<serde_json::Value> = json_response.into_iter().map(|item| {
+                let url = item["url"].as_str().unwrap_or("");
+                let b_id = re.captures(url)
+                    .and_then(|caps| caps.get(1))
+                    .map_or(0, |m| m.as_str().parse::<i32>().unwrap_or(0));
+                serde_json::json!({
+                    "b_id": b_id,
+                    "clearTitle": item["clearTitle"],
+                    "title": item["title"],
+                    "url": item["url"]
+                })
+            }).collect();
+            Ok(actix_web::web::Json(result))
         } else {
             Err(actix_web::error::ErrorInternalServerError("Failed to fetch data from external API"))
         }
