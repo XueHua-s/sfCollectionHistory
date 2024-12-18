@@ -73,7 +73,7 @@ impl Book {
             collect_num: book.collect_num,
             comment_num: book.comment_num,
             comment_long_num: book.comment_long_num,
-            monthly_pass: book.reward_ranking,
+            monthly_pass: book.monthly_pass,
             monthly_ticket_ranking: book.monthly_ticket_ranking,
             reward_ranking: book.reward_ranking,
             created_time: formatted_time.clone(),
