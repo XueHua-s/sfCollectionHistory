@@ -389,7 +389,7 @@ impl BookServices {
                     .and_then(|caps| caps.get(1))
                     .map_or(0, |m| m.as_str().parse::<i32>().unwrap_or(0));
                 serde_json::json!({
-                    "id": b_id,
+                    "b_id": b_id,
                     "clearTitle": item["clearTitle"],
                     "title": item["title"],
                     "url": item["url"]
