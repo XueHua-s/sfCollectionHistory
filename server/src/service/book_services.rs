@@ -141,6 +141,11 @@ impl BookServices {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
+        let sort_type = match query.sort_type.as_str() {
+            "monthly_ticket_ranking" => "ASC",
+            "reward_ranking" => "ASC",
+            _ => "DESC",
+        };
         let base_query = "WITH LatestBooks AS (
                 SELECT 
                     *,
@@ -154,7 +159,7 @@ impl BookServices {
             RankedBooks AS (
                 SELECT 
                     *,
-                    RANK() OVER (ORDER BY like_num DESC) AS `rank`
+                    RANK() OVER (ORDER BY ? ?) AS `rank`
                 FROM 
                     LabelBooks
                 WHERE 
@@ -191,6 +196,8 @@ impl BookServices {
         );
         let rows: Vec<BookRank> = sqlx::query_as::<_, BookRank>(&list_sql)
             .bind(format!("%{}%", query.label_type)) // Correctly bind the label_type with wildcard
+            .bind(&query.sort_type)
+            .bind(sort_type)
             .bind(format!("%{}%", query.book_name)) // Correctly bind the book_name with wildcard
             .bind(query.size)
             .bind((query.current - 1) * query.size)
@@ -210,6 +217,8 @@ impl BookServices {
         );
         let total_num: i32 = sqlx::query_scalar(&total_num_query)
             .bind(format!("%{}%", query.label_type))
+            .bind(&query.sort_type)
+            .bind(sort_type)
             .bind(format!("%{}%", query.book_name))
             .fetch_one(&*client)
             .await
