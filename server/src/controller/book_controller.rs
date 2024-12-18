@@ -28,6 +28,17 @@ async fn get_all_bid() -> impl Responder {
         } // 错误时返回错误信息
     }
 }
+// 查询征文类型
+#[post("/label/query")]
+async fn query_all_label_types(req: web::Json<std::collections::HashMap<String, String>>) -> impl Responder {
+    let keyword = req.get("keyword").cloned().unwrap_or(String::from(""));
+    match BookServices::query_all_label_types(keyword).await {
+        Ok(labels) => HttpResponse::Ok().json(response::ResponseOk::new(labels)), // 成功时返回 JSON 响应
+        Err(err) => {
+            HttpResponse::InternalServerError().json(response::ResponseError::new(err.to_string()))
+        } // 错误时返回错误信息
+    }
+}
 // 书本详情
 #[get("/detail/{book_id}")]
 async fn get_book_detail(book_id: web::Path<i32>) -> impl Responder {
@@ -100,5 +111,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(query_book_analysis_records)
             .service(to_book_maintenance)
             .service(paging_query_ranking)
+            .service(query_all_label_types)
     ); // 默认路由设置为 /user
 }

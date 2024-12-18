@@ -344,6 +344,28 @@ impl BookServices {
 
         Ok(bids)
     }
+    // 查询所有的征文类型
+    pub async fn query_all_label_types(keyword: String) -> Result<Vec<String>, actix_web::Error> {
+        let client = client::connect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
+        })?;
+        // 分组查询最新的创建时间那条, 取最近更新时间 >= 30天的。
+        let sql = "
+           SELECT DISTINCT label_type
+            FROM books
+            WHERE label_type <> '' AND label_type LIKE ?;
+        ";
+
+        let labels: Vec<String> = sqlx::query_scalar(sql)
+            .bind(format!("%{}%", keyword))
+            .fetch_all(&*client)
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+            })?;
+
+        Ok(labels)
+    }
     // 爬虫, 爬取这本书的数据
     pub async fn find_sf_book(book_id: i32) -> Result<Book, actix_web::Error> {
         let base_head_url = env::var("SF_DATA_BASE_URL").expect("未获取到sf接口网址");
