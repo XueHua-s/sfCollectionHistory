@@ -39,6 +39,17 @@ async fn query_all_label_types(req: web::Json<std::collections::HashMap<String, 
         } // 错误时返回错误信息
     }
 }
+// 查询主站的book
+#[post("/query/master_books")]
+async fn keyword_search_master_books(req: web::Json<std::collections::HashMap<String, String>>) -> impl Responder {
+    let keyword = req.get("keyword").cloned().unwrap_or(String::from(""));
+    match BookServices::keyword_search_master_books(keyword).await {
+        Ok(json) => HttpResponse::Ok().json(response::ResponseOk::new(json)), // 成功时返回 JSON 响应
+        Err(err) => {
+            HttpResponse::InternalServerError().json(response::ResponseError::new(err.to_string()))
+        } // 错误时返回错误信息
+    }
+}
 // 书本详情
 #[get("/detail/{book_id}")]
 async fn get_book_detail(book_id: web::Path<i32>) -> impl Responder {
@@ -112,5 +123,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(to_book_maintenance)
             .service(paging_query_ranking)
             .service(query_all_label_types)
+            .service(keyword_search_master_books)
     ); // 默认路由设置为 /user
 }
