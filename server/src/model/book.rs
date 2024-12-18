@@ -7,7 +7,7 @@ pub struct BookRank {
     pub id: String,
     pub b_id: i32,
     pub book_name: String,
-    pub rank: i32,
+    pub rank: u64,
     pub cover_url: String,
     pub book_type: String,
     pub tap_num: i32,

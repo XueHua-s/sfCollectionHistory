@@ -146,7 +146,12 @@ impl BookServices {
             "reward_ranking" => "ASC",
             _ => "DESC",
         };
-        let base_query = "WITH LatestBooks AS (
+        let label_query = if query.label_type.is_empty() {
+            format!("LIKE '%{}%'", &query.label_type)
+        } else {
+            format!("= '{}'", &query.label_type)
+        };
+        let base_query = format!("WITH LatestBooks AS (
                 SELECT 
                     *,
                     ROW_NUMBER() OVER (PARTITION BY b_id ORDER BY r_id DESC) AS rn
@@ -154,18 +159,17 @@ impl BookServices {
                     books
             ),
             LabelBooks AS (
-                SELECT * FROM LatestBooks WHERE label_type LIKE ?
+                SELECT * FROM LatestBooks WHERE label_type {}
             ),
             RankedBooks AS (
                 SELECT 
                     *,
-                    RANK() OVER (ORDER BY ? ?) AS `rank`
+                    RANK() OVER (ORDER BY {} {}) AS `rank`
                 FROM 
                     LabelBooks
                 WHERE 
                     rn = 1
-            )"
-        .to_string();
+            )", &label_query, &query.sort_type, sort_type).to_string();
         let mut list_sql = base_query.clone();
         list_sql.push_str(
             "
@@ -180,13 +184,13 @@ impl BookServices {
                 collect_num, 
                 comment_num, 
                 comment_long_num, 
-                created_time, 
+                DATE_FORMAT(created_time, '%Y-%m-%d') as created_time, 
                 tap_num, 
                 cover_url, 
                 monthly_pass, 
                 monthly_ticket_ranking, 
                 reward_ranking, 
-                last_update_time, 
+                DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time, 
                 label_type
             FROM 
                 RankedBooks
@@ -195,9 +199,7 @@ impl BookServices {
             LIMIT ? OFFSET ?;",
         );
         let rows: Vec<BookRank> = sqlx::query_as::<_, BookRank>(&list_sql)
-            .bind(format!("%{}%", query.label_type)) // Correctly bind the label_type with wildcard
-            .bind(&query.sort_type)
-            .bind(sort_type)
+            // .bind(format!("%{}%", query.label_type)) // Correctly bind the label_type with wildcard
             .bind(format!("%{}%", query.book_name)) // Correctly bind the book_name with wildcard
             .bind(query.size)
             .bind((query.current - 1) * query.size)
@@ -216,9 +218,7 @@ impl BookServices {
             book_name LIKE ?;",
         );
         let total_num: i32 = sqlx::query_scalar(&total_num_query)
-            .bind(format!("%{}%", query.label_type))
-            .bind(&query.sort_type)
-            .bind(sort_type)
+            // .bind(format!("%{}%", query.label_type))
             .bind(format!("%{}%", query.book_name))
             .fetch_one(&*client)
             .await
