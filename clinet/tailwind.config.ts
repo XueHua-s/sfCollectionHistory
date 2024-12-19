@@ -1,31 +1,36 @@
-import type { Config } from "tailwindcss";
-import Animate from 'tailwindcss-animate'
+import type { Config } from 'tailwindcss';
+import Animate from 'tailwindcss-animate';
 export default {
-  darkMode: ["class"],
-  content: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", './**/*.tsx', './index.html'],
+  darkMode: ['class'],
+  content: [
+    'app/**/*.{ts,tsx}',
+    'components/**/*.{ts,tsx}',
+    './**/*.tsx',
+    './index.html',
+  ],
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: '2rem',
     },
     extend: {
       screens: {
         'custom-pc': '760px',
-        'custom-mobile': {'max': '759px'},
+        'custom-mobile': { max: '759px' },
         'max-lg': {
-          max: '1566px'
+          max: '1566px',
         },
         'max-mobile-nav': {
-          max: '1156px'
+          max: '1156px',
         },
         '2xl': '1400px', // 已定义
         '3xl': '1600px', // 新增
         '4xl': '1920px', // 新增
       },
       zIndex: {
-        'max': '9999',
-        'middle': '3000',
-        'antd-tips-flow': '2000'
+        max: '9999',
+        middle: '3000',
+        'antd-tips-flow': '2000',
       },
       colors: {
         primary: '#e29464',
@@ -33,7 +38,7 @@ export default {
         third: '#f6c3a1',
         customCyan: '#f7d3bf',
         theme: {
-          "--theme-bg-gray-secondary": "#fafafa",
+          '--theme-bg-gray-secondary': '#fafafa',
           brand: '#e29464',
           negativeTheme: 'rgba(226, 148, 100, 0.078)',
           footbar: '#a6603b',
@@ -53,7 +58,7 @@ export default {
       borderRadius: {
         lg: `var(--radius)`,
         md: `calc(var(--radius) - 2px)`,
-        sm: "calc(var(--radius) - 4px)",
+        sm: 'calc(var(--radius) - 4px)',
         '4xl': '2rem',
       },
       // fontFamily: {
@@ -115,13 +120,13 @@ export default {
             transform: 'rotate(360deg)',
           },
         },
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
       animation: {
@@ -130,8 +135,8 @@ export default {
         spin: 'spin 1s linear infinite',
         'fade-in': 'fadeIn 0.3s forwards',
         'fade-in-after-transition': 'fadeIn 0.3s forwards 0.15s',
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
       },
       lineHeight: {
         none: '1',

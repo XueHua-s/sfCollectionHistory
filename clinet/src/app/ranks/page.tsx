@@ -1,4 +1,4 @@
 const Ranks = () => {
-  return <div>排行榜</div>
-}
+  return <div>排行榜</div>;
+};
 export default Ranks;
