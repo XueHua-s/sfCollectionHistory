@@ -10,7 +10,7 @@ const HeaderMenus = [
     icon: <HomeOutlined />,
   },
   {
-    key: 'ranks',
+    key: '/ranks',
     label: '排行榜',
     icon: <FieldNumberOutlined />,
   },
