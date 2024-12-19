@@ -25,3 +25,5 @@ log = "0.4"
 # Start Generation Here
 regex = "1.5" 
 # End Generation Here
+# Start Generation Here
+actix-cors = "0.6"
