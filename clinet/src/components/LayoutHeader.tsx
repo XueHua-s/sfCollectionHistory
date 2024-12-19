@@ -1,22 +1,22 @@
-"use client";
-import {useEffect, useState} from "react";
-import {FieldNumberOutlined, HomeOutlined} from "@ant-design/icons";
-import {Menu} from "antd";
-import {usePathname, useRouter} from 'next/navigation';
+'use client';
+import { useEffect, useState } from 'react';
+import { FieldNumberOutlined, HomeOutlined } from '@ant-design/icons';
+import { Menu } from 'antd';
+import { usePathname, useRouter } from 'next/navigation';
 const HeaderMenus = [
   {
     key: '/',
-    label: "首页",
-    icon: <HomeOutlined />
+    label: '首页',
+    icon: <HomeOutlined />,
   },
   {
-    key: 'rank',
-    label: "排行榜",
-    icon: <FieldNumberOutlined />
-  }
-]
+    key: 'ranks',
+    label: '排行榜',
+    icon: <FieldNumberOutlined />,
+  },
+];
 const LayoutHeader = () => {
-  const pathname = usePathname()
+  const pathname = usePathname();
   const router = useRouter();
   // 定义一个状态变量来存储页面滚动位置
   const [isFixed, setIsFixed] = useState(false);
@@ -43,10 +43,15 @@ const LayoutHeader = () => {
 
   return (
     <div
-      className={`w-full transition-all bg-white ${isFixed ? 'fixed shadow-xl top-0' : ''}`}
-    >
+      className={`w-full transition-all bg-white ${isFixed ? 'fixed shadow-xl top-0' : ''}`}>
       <div className="header-container text-white custom-pc:w-[80%] custom-pc:m-auto custom-mobile:w-[95%]">
-        <Menu onClick={(e) => router.push(e.key)} className="bg-white" selectedKeys={[pathname]} mode="horizontal" items={HeaderMenus} />
+        <Menu
+          onClick={(e) => router.push(e.key)}
+          className="bg-white"
+          selectedKeys={[pathname]}
+          mode="horizontal"
+          items={HeaderMenus}
+        />
       </div>
     </div>
   );

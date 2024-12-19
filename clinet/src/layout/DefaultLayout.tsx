@@ -1,6 +1,6 @@
 import LayoutHeader from '@/components/LayoutHeader';
-import SuspenseSpin from "@/components/SuspenseSpin";
-import {Suspense} from "react";
+import SuspenseSpin from '@/components/SuspenseSpin';
+import { Suspense } from 'react';
 
 interface DefaultLayoutProps {
   children: React.ReactNode;
