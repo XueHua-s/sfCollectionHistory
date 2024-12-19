@@ -1,4 +1,4 @@
-use actix_web::http::header::{self, HeaderValue};
+// use actix_web::http::header;
 use actix_web::middleware;
 use actix_web::{App, HttpServer};
 use blog::modules;
@@ -6,6 +6,7 @@ use tokio::task;
 use tokio::runtime::Runtime;
 use blog::schedule::book;
 use env_logger;
+use actix_cors::Cors;
 use std::fs::File;
 use log::{LevelFilter};
 use env_logger::Builder;
@@ -44,10 +45,13 @@ async fn main() -> std::io::Result<()> {
     });
     HttpServer::new(|| {
         App::new()
-            .wrap(middleware::DefaultHeaders::new().add((
-                header::ACCESS_CONTROL_ALLOW_ORIGIN,
-                HeaderValue::from_static("*"),
-            )))
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allow_any_method()
+                    .allow_any_header()
+                    .max_age(3600),
+            )
             .wrap(middleware::Logger::new(
                 "ip: %a \"%r\" %s %b \"%{User-Agent}i\" %Dms"
             ))
