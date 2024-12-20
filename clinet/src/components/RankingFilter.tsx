@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { getRankRecord } from '@/client_api/rank';
 import { BookRank } from '@/types/book';
+import {useRouter} from "next/navigation";
 export type SortType =
   | 'like_num'
   | 'collect_num'
@@ -20,6 +21,7 @@ const RankingFilter: React.FC<RankingFilterProps> = ({
   sortType,
   labelType,
 }) => {
+  const router = useRouter();
   const [ranks, setRanks] = useState<BookRank[]>([]);
   const loadRankRecord = async () => {
     const rankRes = await getRankRecord({
@@ -43,6 +45,7 @@ const RankingFilter: React.FC<RankingFilterProps> = ({
       }>
       {ranks.map((item) => (
         <div
+          onClick={() => router.push('/detail?bookId=' + item.b_id)}
           className="book cursor-pointer flex flex-col items-center"
           key={item.id}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
