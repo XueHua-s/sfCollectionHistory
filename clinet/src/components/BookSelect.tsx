@@ -32,6 +32,7 @@ const BookSelect: React.FC<BookSelectProps> = ({ value, onChange }) => {
         message.error('Failed to fetch data');
       }
     } catch (error: any) {
+      console.log(error)
       message.error('An error occurred');
     } finally {
       setLoading(false);
