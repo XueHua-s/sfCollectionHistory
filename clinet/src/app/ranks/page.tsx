@@ -1,10 +1,12 @@
 'use client';
-import {Button, Input, Pagination, Select, Table} from 'antd';
+import {Button, Input, Pagination, Select, Table, Tag, Tooltip} from 'antd';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import { sortTypes } from '@/types/enums';
 import LabelTypeSearchSelecter from '@/components/LabelTypeSearchSelecter';
 import { getRankRecord } from '@/client_api/rank';
 import {BookRank} from "@/types/book";
+import lodash from 'lodash';
+import dayjs from "dayjs";
 const Ranks = () => {
   const [ loading, setLoading ] = useState<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -38,7 +40,7 @@ const Ranks = () => {
     };
   }, []);
   const columns = useMemo(() => {
-    return [
+    const cols = [
       {
         width: 80,
         title: '排名',
@@ -51,12 +53,51 @@ const Ranks = () => {
         title: '书名',
         dataIndex: 'book_name',
         key: 'book_name',
+        render (value: string) {
+          return <div className={'text-primary cursor-pointer'}>{value}</div>
+        }
+      },
+      {
+        width: 70,
+        title: '类型',
+        dataIndex: 'book_type',
+        key: 'book_type',
       },
       {
         width: 150,
         title: '征文类型',
         dataIndex: 'label_type',
         key: 'label_type',
+      },
+      {
+        width: 150,
+        title: '标签',
+        dataIndex: 'tags',
+        key: 'tags',
+        render (value: string, item: BookRank) {
+          // 将字符串转换为dayjs对象
+          const date = dayjs(item.last_update_time);
+
+          // 获取当前时间的dayjs对象
+          const now = dayjs();
+
+          // 计算时间差（单位为天）
+          const diff = now.diff(date, 'day');
+
+          // 判断时间是否比当前时间早超过30天
+          const isMoreThan30DaysOld = diff > 30;
+          const tags = value.split(',');
+          const tagsMap = tags.map((item) =>  <Tag className={'ml-1 mb-1'} color={'blue'} bordered={false} key={item}>{item}</Tag>)
+          if (isMoreThan30DaysOld) {
+            tagsMap.push(
+              <Tooltip title={'超过30天未更新, 将不再维护作品数据。作品恢复更新后, 请手动提交维护。'}>
+                <Tag className={'ml-1 mb-1'} color={'red'} bordered={false} key={'太监'}>
+                  太监
+                </Tag>
+              </Tooltip>)
+          }
+          return tagsMap;
+        }
       },
       {
         width: 150,
@@ -67,51 +108,57 @@ const Ranks = () => {
       },
       {
         width: 150,
-        title: '类型',
-        dataIndex: 'book_type',
-        key: 'book_type',
-      },
-      {
-        width: 150,
         title: '点击数',
         dataIndex: 'tap_num',
         key: 'tap_num',
-      },
-      {
-        width: 150,
-        title: '标签',
-        dataIndex: 'tags',
-        key: 'tags',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
         title: '点赞数',
         dataIndex: 'like_num',
         key: 'like_num',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
         title: '收藏数',
         dataIndex: 'collect_num',
         key: 'collect_num',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
         title: '评论数',
         dataIndex: 'comment_num',
         key: 'comment_num',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
         title: '长评数',
         dataIndex: 'comment_long_num',
         key: 'comment_long_num',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
         title: '月票',
         dataIndex: 'monthly_pass',
         key: 'monthly_pass',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
@@ -126,19 +173,29 @@ const Ranks = () => {
         key: 'reward_ranking',
       },
       {
-        width: 150,
-        title: '创建时间',
+        width: 120,
+        title: '数据刷新时间',
         dataIndex: 'created_time',
         key: 'created_time',
       },
       {
-        width: 150,
-        title: '最后更新时间',
+        width: 160,
+        title: '作品最后更新时间',
         dataIndex: 'last_update_time',
         key: 'last_update_time',
       },
     ];
-  }, [])
+    for (const index in cols) {
+      const col = cols[index];
+      if (col.key === sortType) {
+        const colClone = lodash.cloneDeep(col);
+        cols.splice(Number(index), 1)
+        cols.splice(6, 0, colClone)
+        break;
+      }
+    }
+    return cols
+  }, [tableData])
   const loadTableData = async (newPage?: number, newSize?: number) => {
     setLoading(true)
     try {
@@ -171,7 +228,7 @@ const Ranks = () => {
   return (
     <div className={'p-2 w-full h-full flex flex-col books-rank'}>
       <div className="query">
-        <div className="flex gap-4">
+        <div className="flex custom-mobile:flex-col gap-4">
           <div className="item flex items-center">
             <div className="label w-[80px]">书名:</div>
             <div className="content">
