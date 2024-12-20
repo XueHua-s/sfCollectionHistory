@@ -250,7 +250,7 @@ const Ranks = () => {
   }, []);
   return (
     <div className={'p-2 w-full h-full flex flex-col books-rank'}>
-      <div className="query">
+      <div className="query mt-4">
         <div className="flex custom-mobile:flex-col gap-4">
           <div className="item flex items-center">
             <div className="label w-[80px]">书名:</div>
