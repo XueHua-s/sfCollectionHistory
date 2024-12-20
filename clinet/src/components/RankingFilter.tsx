@@ -45,6 +45,7 @@ const RankingFilter: React.FC<RankingFilterProps> = ({
         <div
           className="book cursor-pointer flex flex-col items-center"
           key={item.id}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className={'w-full'} alt={item.book_name} src={item.cover_url} />
           <span className={'text-14px mt-2'}>
             <span>No.{item.rank}</span>

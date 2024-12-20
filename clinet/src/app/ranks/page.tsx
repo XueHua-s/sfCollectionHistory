@@ -1,23 +1,49 @@
 'use client';
-import {Button, Input, Select, Table} from 'antd';
-import {useEffect, useMemo, useState} from 'react';
+import {Button, Input, Pagination, Select, Table} from 'antd';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import { sortTypes } from '@/types/enums';
 import LabelTypeSearchSelecter from '@/components/LabelTypeSearchSelecter';
 import { getRankRecord } from '@/client_api/rank';
 import {BookRank} from "@/types/book";
 const Ranks = () => {
+  const [ loading, setLoading ] = useState<boolean>(false);
+  const tableRef = useRef<HTMLDivElement>(null);
+  // 创建一个状态来存储高度
+  const [tableHeight, setTableHeight] = useState(0);
   const [bookName, setBookName] = useState('');
   const [sortType, setSortType] = useState('collect_num');
   const [labelType, setLabelType] = useState('');
   const [tableData, setTableData] = useState<BookRank[]>([]);
   const [current, setCurrent] = useState(1);
   const [size, setSize] = useState(20);
+  const [ total, setTotal ] = useState(0);
+  // 使用useEffect来监听高度变化
+  useEffect(() => {
+    // 定义一个函数来更新高度
+    const updateHeight = () => {
+      if (tableRef.current) {
+        setTableHeight(tableRef.current.clientHeight);
+      }
+    };
+
+    // 监听窗口大小变化，以便在窗口大小改变时更新高度
+    window.addEventListener('resize', updateHeight);
+
+    // 初始调用更新高度
+    updateHeight();
+
+    // 清理函数，在组件卸载时移除事件监听器
+    return () => {
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, []);
   const columns = useMemo(() => {
     return [
       {
         width: 150,
         title: '排名',
         dataIndex: 'rank',
+        fixed: true,
         key: 'rank',
       },
       {
@@ -113,23 +139,37 @@ const Ranks = () => {
       },
     ];
   }, [])
-  const loadTableData = async () => {
-    const data = await getRankRecord({
-      current,
-      size,
-      sort_type: sortType,
-      label_type: labelType,
-      book_name: bookName,
-    });
-    if (data.code === 'success' && data?.data) {
-      setTableData(data.data?.list)
+  const loadTableData = async (newPage?: number, newSize?: number) => {
+    setLoading(true)
+    try {
+      const data = await getRankRecord({
+        current: newPage || current,
+        size: newSize || current,
+        sort_type: sortType,
+        label_type: labelType,
+        book_name: bookName,
+      });
+      if (data.code === 'success' && data?.data) {
+        setTableData(data.data?.list)
+        setTotal(data.data.total_num)
+        if (newPage && newSize) {
+          setCurrent(newPage)
+          setSize(newSize)
+        }
+        setLoading(false)
+      }
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+    } catch (err: never) {
+      console.log(err);
+      setLoading(false)
     }
   };
   useEffect(() => {
     loadTableData()
   }, []);
   return (
-    <div className={'p-2 books-rank'}>
+    <div className={'p-2 w-full h-full flex flex-col books-rank'}>
       <div className="query">
         <div className="flex gap-4">
           <div className="item flex items-center">
@@ -165,19 +205,35 @@ const Ranks = () => {
           </div>
           <div className={'item flex items-center'}>
             <Button onClick={() => {
-              setCurrent(1)
-              loadTableData()
-            }}>搜索</Button>
+              loadTableData(1, size)
+            }}>查询</Button>
           </div>
         </div>
       </div>
-      <div className="table relative mt-4 w-full overflow-hidden">
-        <Table
-          scroll={{ x: 300, y: 550 }} // 确保x值足够宽，y值足够高
-          columns={columns}
-          dataSource={tableData}
-          rowKey="id" // 确保每行数据有一个唯一的key
-        />
+      <div ref={tableRef} className="table flex-1 flex-col relative mt-4 w-full overflow-hidden">
+        <div className={'absolute w-full h-full'}>
+          <Table
+            // key={tableHeight}
+            loading={loading}
+            tableLayout={'fixed'}
+            pagination={false}
+            scroll={{ x: columns.reduce((count, item) => {
+                count += item?.width as number;
+                return count;
+              }, 0), y: tableHeight - 70 }}// 确保x值足够宽，y值足够高
+            columns={columns}
+            className={'w-full'}
+            bordered
+            // virtual
+            dataSource={tableData}
+            rowKey="id" // 确保每行数据有一个唯一的key
+          />
+        </div>
+      </div>
+      <div className="page flex justify-end">
+        <Pagination onChange={(page, size) => {
+          loadTableData(page, size)
+        }} defaultCurrent={current} total={total} pageSize={size} />
       </div>
     </div>
   );

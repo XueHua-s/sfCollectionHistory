@@ -13,7 +13,7 @@ const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
           <LayoutHeader />
         </Suspense>
       </header>
-      <main className={'custom-pc:w-[80%] custom-mobile:w-[95%] m-auto'}>
+      <main className={'custom-pc:w-[80%] flex-1 custom-mobile:w-[95%] m-auto'}>
         {children}
       </main>
       <footer></footer>

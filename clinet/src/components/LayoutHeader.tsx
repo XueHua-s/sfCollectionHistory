@@ -43,7 +43,7 @@ const LayoutHeader = () => {
 
   return (
     <div
-      className={`w-full transition-all bg-white ${isFixed ? 'fixed shadow-xl top-0' : ''}`}>
+      className={`w-full transition-all bg-[#faf9f9] ${isFixed ? 'fixed shadow-xl top-0' : ''}`}>
       <div className="header-container text-white custom-pc:w-[80%] custom-pc:m-auto custom-mobile:w-[95%]">
         <Menu
           onClick={(e) => router.push(e.key)}
