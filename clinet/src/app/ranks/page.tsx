@@ -105,7 +105,7 @@ const Ranks = () => {
           } else {
             tagsMap.push(
               <Tooltip title={'正常连载中, 如果30天未更新, 作品将会太监, 数据不再正常维护。'}>
-                <Tag className={'ml-1 mb-1'} color={'blue'} bordered={false} key={'太监'}>
+                <Tag className={'ml-1 mb-1'} color={'success'} bordered={false} key={'太监'}>
                   连载中
                 </Tag>
               </Tooltip>)
