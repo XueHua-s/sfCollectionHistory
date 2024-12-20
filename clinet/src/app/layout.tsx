@@ -12,11 +12,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`h-[100vh] w-full antialiased flex flex-col thinner-scrollbar`}>
-        <SFConfigProvider>
-          <AntdRegistry>
+        <AntdRegistry>
+          <SFConfigProvider>
             <DefaultLayout>{children}</DefaultLayout>
-          </AntdRegistry>
-        </SFConfigProvider>
+          </SFConfigProvider>
+        </AntdRegistry>
       </body>
     </html>
   );

@@ -1,14 +1,16 @@
 'use client';
-import {Button, Input, Pagination, Select, Table, Tag, Tooltip} from 'antd';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import { Button, Input, Pagination, Select, Table, Tag, Tooltip } from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { sortTypes } from '@/types/enums';
 import LabelTypeSearchSelecter from '@/components/LabelTypeSearchSelecter';
 import { getRankRecord } from '@/client_api/rank';
-import {BookRank} from "@/types/book";
+import { BookRank } from '@/types/book';
 import lodash from 'lodash';
-import dayjs from "dayjs";
+import { useRouter } from 'next/navigation';
+import { bookIsEunuch } from '@/untils';
 const Ranks = () => {
-  const [ loading, setLoading ] = useState<boolean>(false);
+  const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
   // 创建一个状态来存储高度
   const [tableHeight, setTableHeight] = useState(600);
@@ -18,7 +20,7 @@ const Ranks = () => {
   const [tableData, setTableData] = useState<BookRank[]>([]);
   const [current, setCurrent] = useState(1);
   const [size, setSize] = useState(20);
-  const [ total, setTotal ] = useState(0);
+  const [total, setTotal] = useState(0);
   // 使用useEffect来监听高度变化
   useEffect(() => {
     // 定义一个函数来更新高度
@@ -53,9 +55,17 @@ const Ranks = () => {
         title: '书名',
         dataIndex: 'book_name',
         key: 'book_name',
-        render (value: string) {
-          return <div className={'text-primary cursor-pointer'}>{value}</div>
-        }
+        render(value: string, item: BookRank) {
+          return (
+            <div
+              onClick={() => {
+                router.push(`/detail?bookId=${item.b_id}`);
+              }}
+              className={'text-primary cursor-pointer'}>
+              {value}
+            </div>
+          );
+        },
       },
       {
         width: 70,
@@ -74,51 +84,83 @@ const Ranks = () => {
         title: '标签',
         dataIndex: 'tags',
         key: 'tags',
-        render (value: string, item: BookRank) {
-          // 将字符串转换为dayjs对象
-          const date = dayjs(item.last_update_time);
-
-          // 获取当前时间的dayjs对象
-          const now = dayjs();
-
-          // 计算时间差（单位为天）
-          const diff = now.diff(date, 'day');
-
+        render(value: string, item: BookRank) {
           // 判断时间是否比当前时间早超过30天
-          const isMoreThan30DaysOld = diff > 30;
+          const isMoreThan30DaysOld = bookIsEunuch(
+            item.last_update_time,
+            item.finish,
+          );
           const tags = value.split(',');
-          const tagsMap = tags.map((item) =>  <Tag className={'ml-1 mb-1'} color={'blue'} bordered={false} key={item}>{item}</Tag>)
+          const tagsMap = tags.map((item) => (
+            <Tag
+              className={'ml-1 mb-1'}
+              color={'blue'}
+              bordered={false}
+              key={item}>
+              {item}
+            </Tag>
+          ));
           if (item.finish === 1) {
             tagsMap.push(
-              <Tooltip title={'作品已完结, 数据不再维护, 状态如有更新, 请手动提交维护，'}>
-                <Tag className={'ml-1 mb-1'} color={'success'} bordered={false} key={'太监'}>
+              <Tooltip
+                title={
+                  '作品已完结, 数据不再维护, 状态如有更新, 请手动提交维护，'
+                }>
+                <Tag
+                  className={'ml-1 mb-1'}
+                  color={'success'}
+                  bordered={false}
+                  key={'太监'}>
                   完结
                 </Tag>
-              </Tooltip>)
+              </Tooltip>,
+            );
           } else if (isMoreThan30DaysOld) {
             tagsMap.push(
-              <Tooltip title={'超过30天未更新, 将不再维护作品数据。作品恢复更新后, 请手动提交维护。'}>
-                <Tag className={'ml-1 mb-1'} color={'red'} bordered={false} key={'太监'}>
+              <Tooltip
+                title={
+                  '超过30天未更新, 将不再维护作品数据。作品恢复更新后, 请手动提交维护。'
+                }>
+                <Tag
+                  className={'ml-1 mb-1'}
+                  color={'red'}
+                  bordered={false}
+                  key={'太监'}>
                   太监
                 </Tag>
-              </Tooltip>)
+              </Tooltip>,
+            );
           } else {
             tagsMap.push(
-              <Tooltip title={'正常连载中, 如果30天未更新, 作品将会太监, 数据不再正常维护。'}>
-                <Tag className={'ml-1 mb-1'} color={'success'} bordered={false} key={'太监'}>
+              <Tooltip
+                title={
+                  '正常连载中, 如果30天未更新, 作品将会太监, 数据不再正常维护。'
+                }>
+                <Tag
+                  className={'ml-1 mb-1'}
+                  color={'success'}
+                  bordered={false}
+                  key={'太监'}>
                   连载中
                 </Tag>
-              </Tooltip>)
+              </Tooltip>,
+            );
           }
           return tagsMap;
-        }
+        },
       },
       {
         width: 150,
         title: '封面',
         dataIndex: 'cover_url',
         key: 'cover_url',
-        render: (coverUrl: string) => <img src={coverUrl} alt="cover" style={{ width: '120px', height: 'auto' }} />,
+        render: (coverUrl: string) => (
+          <img
+            src={coverUrl}
+            alt="cover"
+            style={{ width: '120px', height: 'auto' }}
+          />
+        ),
       },
       {
         width: 150,
@@ -126,8 +168,8 @@ const Ranks = () => {
         dataIndex: 'word_count',
         key: 'word_count',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -135,8 +177,8 @@ const Ranks = () => {
         dataIndex: 'tap_num',
         key: 'tap_num',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -144,8 +186,8 @@ const Ranks = () => {
         dataIndex: 'like_num',
         key: 'like_num',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -153,8 +195,8 @@ const Ranks = () => {
         dataIndex: 'collect_num',
         key: 'collect_num',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -162,8 +204,8 @@ const Ranks = () => {
         dataIndex: 'comment_num',
         key: 'comment_num',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -171,8 +213,8 @@ const Ranks = () => {
         dataIndex: 'comment_long_num',
         key: 'comment_long_num',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -180,8 +222,8 @@ const Ranks = () => {
         dataIndex: 'monthly_pass',
         key: 'monthly_pass',
         render(value: number) {
-          return value.toLocaleString()
-        }
+          return value.toLocaleString();
+        },
       },
       {
         width: 150,
@@ -212,15 +254,15 @@ const Ranks = () => {
       const col = cols[index];
       if (col.key === sortType) {
         const colClone = lodash.cloneDeep(col);
-        cols.splice(Number(index), 1)
-        cols.splice(6, 0, colClone)
+        cols.splice(Number(index), 1);
+        cols.splice(6, 0, colClone);
         break;
       }
     }
-    return cols
-  }, [tableData])
+    return cols;
+  }, [tableData]);
   const loadTableData = async (newPage?: number, newSize?: number) => {
-    setLoading(true)
+    setLoading(true);
     try {
       const data = await getRankRecord({
         current: newPage || current,
@@ -230,23 +272,23 @@ const Ranks = () => {
         book_name: bookName,
       });
       if (data.code === 'success' && data?.data) {
-        setTableData(data.data?.list)
-        setTotal(data.data.total_num)
+        setTableData(data.data?.list);
+        setTotal(data.data.total_num);
         if (newPage && newSize) {
-          setCurrent(newPage)
-          setSize(newSize)
+          setCurrent(newPage);
+          setSize(newSize);
         }
-        setLoading(false)
+        setLoading(false);
       }
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
     } catch (err: never) {
       console.log(err);
-      setLoading(false)
+      setLoading(false);
     }
   };
   useEffect(() => {
-    loadTableData(1, 10)
+    loadTableData(1, 10);
   }, []);
   return (
     <div className={'p-2 w-full h-full flex flex-col books-rank'}>
@@ -284,23 +326,31 @@ const Ranks = () => {
             </div>
           </div>
           <div className={'item flex items-center'}>
-            <Button onClick={() => {
-              loadTableData(1, size)
-            }}>查询</Button>
+            <Button
+              onClick={() => {
+                loadTableData(1, size);
+              }}>
+              查询
+            </Button>
           </div>
         </div>
       </div>
-      <div ref={tableRef} className="table h-[80vh] relative mt-4 w-full overflow-hidden">
+      <div
+        ref={tableRef}
+        className="table h-[80vh] relative mt-4 w-full overflow-hidden">
         <div className={'absolute w-full h-full'}>
           <Table
             // key={tableHeight}
             loading={loading}
             tableLayout={'fixed'}
             pagination={false}
-            scroll={{ x: columns.reduce((count, item) => {
+            scroll={{
+              x: columns.reduce((count, item) => {
                 count += item?.width as number;
                 return count;
-              }, 0), y: tableHeight - 100 }}// 确保x值足够宽，y值足够高
+              }, 0),
+              y: tableHeight - 100,
+            }} // 确保x值足够宽，y值足够高
             columns={columns}
             className={'w-full'}
             bordered
@@ -311,9 +361,14 @@ const Ranks = () => {
         </div>
       </div>
       <div className="page flex justify-end">
-        <Pagination onChange={(page, size) => {
-          loadTableData(page, size)
-        }} defaultCurrent={current} total={total} pageSize={size} />
+        <Pagination
+          onChange={(page, size) => {
+            loadTableData(page, size);
+          }}
+          defaultCurrent={current}
+          total={total}
+          pageSize={size}
+        />
       </div>
     </div>
   );
