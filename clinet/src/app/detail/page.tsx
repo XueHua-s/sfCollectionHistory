@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { DatePicker, message, Tooltip, Select, Button, Spin } from 'antd';
+import {DatePicker, Tooltip, Select, Button, Spin, message} from 'antd';
 import { getBookDetail, getBookDetailHistory } from '@/client_api/detail';
 import { BookInfo } from '@/types/book';
 import { bookIsEunuch } from '@/untils';
@@ -25,6 +25,7 @@ const getChartService = (name: string, books: BookInfo[], key: PropertyKey) => {
 };
 
 const BookDetailPage = () => {
+  const [messageApi, contextHolder] = message.useMessage();
   const query = useSearchParams();
   const [datePicker, setDatePicker] = useState<any>([
     dayjs().subtract(365, 'day'),
@@ -43,9 +44,10 @@ const BookDetailPage = () => {
         const data = await getBookDetail(bookId);
         if (data.code === 'success') {
           setBookDetail(data.data as BookInfo);
-        } else {
-          message.error('Failed to load book details');
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (err: any) {
+        messageApi.error('获取作品信息失败, 请前往提交入口, 提交收录');
       } finally {
         setLoading(false);
       }
@@ -109,6 +111,7 @@ const BookDetailPage = () => {
 
   return (
     <div>
+      {contextHolder}
       <h1>作品详情/历史数据</h1>
       <p className={'text-primary'}>
         注意: 连载作品超过30天未更新, 状态视为太监,
@@ -117,14 +120,14 @@ const BookDetailPage = () => {
       <p className={'text-primary mt-2'}>默认最大查询时间范围为: 1年；按年查询, 范围最大5年。</p>
       <div className="query mt-4 gap-4 flex items-center">
         <div className="line flex items-center">
-          <div className="label w-[100px]">时间范围</div>
+          <div className="label w-[100px]">时间范围:</div>
           <RangePicker
             value={datePicker}
             onChange={(dates) => setDatePicker(dates)}
           />
         </div>
         <div className="line flex items-center">
-          <div className="label w-[100px]">分组类型</div>
+          <div className="label w-[100px]">分组类型:</div>
           <Select value={groupType} onChange={setGroupType}>
             <Option value={1}>天</Option>
             <Option value={2}>月</Option>
@@ -170,7 +173,7 @@ const BookDetailPage = () => {
               </p>
             </div>
           </div>
-          <div className="date-line">
+          <div className="date-line shadow p-4">
             <DataLineCharts
               xData={getChartX(booksHistory)}
               title={'收藏数据'}
