@@ -13,9 +13,10 @@ export const responseEach = (res: AxiosResponse) => {
   }
 };
 export const responseEachErr = async (err: AxiosError) => {
-  console.log(err);
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   if (err?.response?.data.code === 'error') {
-    message.error(err.response.data.error);
+    message.error((err.response.data as any).error as string);
   }
   throw err;
 };
