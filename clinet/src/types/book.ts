@@ -3,6 +3,8 @@ export interface BookInfo {
   b_id: number;
   book_name: string;
   cover_url: string;
+  finish: number;
+  word_count: number;
   book_type: string;
   tap_num: number;
   tags: string;

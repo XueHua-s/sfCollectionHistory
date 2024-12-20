@@ -88,7 +88,14 @@ const Ranks = () => {
           const isMoreThan30DaysOld = diff > 30;
           const tags = value.split(',');
           const tagsMap = tags.map((item) =>  <Tag className={'ml-1 mb-1'} color={'blue'} bordered={false} key={item}>{item}</Tag>)
-          if (isMoreThan30DaysOld) {
+          if (item.finish === 1) {
+            tagsMap.push(
+              <Tooltip title={'作品已完结, 数据不再维护, 状态如有更新, 请手动提交维护，'}>
+                <Tag className={'ml-1 mb-1'} color={'red'} bordered={false} key={'太监'}>
+                  完结
+                </Tag>
+              </Tooltip>)
+          } else if (isMoreThan30DaysOld) {
             tagsMap.push(
               <Tooltip title={'超过30天未更新, 将不再维护作品数据。作品恢复更新后, 请手动提交维护。'}>
                 <Tag className={'ml-1 mb-1'} color={'red'} bordered={false} key={'太监'}>
@@ -105,6 +112,15 @@ const Ranks = () => {
         dataIndex: 'cover_url',
         key: 'cover_url',
         render: (coverUrl: string) => <img src={coverUrl} alt="cover" style={{ width: '120px', height: 'auto' }} />,
+      },
+      {
+        width: 150,
+        title: '字数',
+        dataIndex: 'word_count',
+        key: 'word_count',
+        render(value: number) {
+          return value.toLocaleString()
+        }
       },
       {
         width: 150,
