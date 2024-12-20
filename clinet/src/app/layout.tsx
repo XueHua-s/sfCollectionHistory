@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { AntdRegistry } from '@ant-design/nextjs-registry';
 import DefaultLayout from '@/layout/DefaultLayout';
 import SFConfigProvider from '@/components/SFConfigProvider';
 
@@ -29,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased thinner-scrollbar`}>
         <SFConfigProvider>
-          <DefaultLayout>{children}</DefaultLayout>
+          <AntdRegistry>
+            <DefaultLayout>{children}</DefaultLayout>
+          </AntdRegistry>
         </SFConfigProvider>
       </body>
     </html>

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.5.2",
+    "@ant-design/nextjs-registry": "^1.0.2",
     "antd": "^5.22.5",
     "axios": "^1.7.9",
     "cross-env": "^7.0.3",
