@@ -478,13 +478,10 @@ impl BookServices {
                             last_update_time = date_part.to_string();
                         }
                     } else if text.starts_with("字数：") {
-                        let word_count_text = text.replace("字数：", "").trim().to_string();
-                        if let Some(end_index) = word_count_text.find('[') {
-                            word_count = word_count_text[..end_index].trim().parse::<i32>().unwrap_or(0);
-                            finish = if word_count_text[end_index..].contains("已完结") { 1 } else { 0 };
-                        } else {
-                            word_count = word_count_text.parse::<i32>().unwrap_or(0);
-                            finish = 0; // Default to false if not specified
+                        let word_count_regex = regex::Regex::new(r"字数：(\d+)(?:字)?\[(.*?)\]").unwrap();
+                        if let Some(captures) = word_count_regex.captures(text) {
+                            word_count = captures[1].parse::<i32>().unwrap_or(0);
+                            finish = if &captures[2] == "已完结" { 1 } else { 0 };
                         }
                     }
                 }
