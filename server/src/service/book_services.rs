@@ -29,13 +29,13 @@ impl BookServices {
 
         // 查询books表中指定bid的最新记录(通过rid降序排列, rid是自增记录id)
         let sql = "
-        SELECT id, b_id, book_name, cover_url, finish, word_count, book_type, tap_num, tags, like_num, 
+        SELECT id, b_id, book_name, cover_url, `finish`, `word_count`, book_type, tap_num, tags, like_num, 
             collect_num, comment_num, comment_long_num, monthly_pass, 
             monthly_ticket_ranking, reward_ranking, 
             DATE_FORMAT(created_time, '%Y-%m-%d') as created_time,
             DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time,
-            r_id,
-            label_type,
+            `r_id`,
+            label_type
         FROM books
         WHERE b_id = ?
         ORDER BY r_id DESC
@@ -338,7 +338,7 @@ impl BookServices {
         })?;
         // 分组查询最新的创建时间那条, 取最近更新时间 >= 30天的连载中作品。
         let sql = "
-           SELECT b_id, MAX(created_time) as max_created_time
+           SELECT b_id, MAX(created_time) as max_created_time, finish
             FROM books
             WHERE last_update_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND finish = 0
             GROUP BY b_id;
