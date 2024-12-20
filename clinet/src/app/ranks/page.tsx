@@ -91,7 +91,7 @@ const Ranks = () => {
           if (item.finish === 1) {
             tagsMap.push(
               <Tooltip title={'作品已完结, 数据不再维护, 状态如有更新, 请手动提交维护，'}>
-                <Tag className={'ml-1 mb-1'} color={'red'} bordered={false} key={'太监'}>
+                <Tag className={'ml-1 mb-1'} color={'success'} bordered={false} key={'太监'}>
                   完结
                 </Tag>
               </Tooltip>)
@@ -100,6 +100,13 @@ const Ranks = () => {
               <Tooltip title={'超过30天未更新, 将不再维护作品数据。作品恢复更新后, 请手动提交维护。'}>
                 <Tag className={'ml-1 mb-1'} color={'red'} bordered={false} key={'太监'}>
                   太监
+                </Tag>
+              </Tooltip>)
+          } else {
+            tagsMap.push(
+              <Tooltip title={'正常连载中, 如果30天未更新, 作品将会太监, 数据不再正常维护。'}>
+                <Tag className={'ml-1 mb-1'} color={'blue'} bordered={false} key={'太监'}>
+                  连载中
                 </Tag>
               </Tooltip>)
           }
