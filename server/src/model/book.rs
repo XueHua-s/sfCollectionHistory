@@ -5,6 +5,8 @@ use uuid::Uuid;
 #[derive(Serialize, Deserialize, Debug, FromRow)]
 pub struct BookRank {
     pub id: String,
+    pub finish: i32,
+    pub word_count: i32,
     pub b_id: i32,
     pub book_name: String,
     pub rank: u32,
@@ -26,6 +28,7 @@ pub struct BookRank {
 // 书本基本信息
 pub struct BasicBook {
     pub id: String,
+    pub finish: i32,
     pub book_name: String,
     pub cover_url: String,
     pub book_type: String,
@@ -39,10 +42,12 @@ pub struct BasicBook {
 pub struct Book {
     pub id: Option<String>,
     pub b_id: i32,
+    pub finish: i32,
     pub book_name: String,
     pub cover_url: String,
     pub book_type: String,
     pub tap_num: i32,
+    pub word_count: i32,
     pub tags: String,
     pub like_num: i32,
     pub collect_num: i32,
@@ -64,7 +69,9 @@ impl Book {
         Book {
             id: Some(Uuid::new_v4().to_string()),
             cover_url: book.cover_url,
+            finish: book.finish,
             b_id: book.b_id,
+            word_count: book.word_count,
             book_name: book.book_name,
             tap_num: book.tap_num,
             book_type: book.book_type,
@@ -85,12 +92,14 @@ impl Book {
         Book {
             id: self.id.clone(),
             b_id: self.b_id,
+            finish: self.finish,
             book_name: self.book_name.clone(),
             cover_url: self.cover_url.clone(),
             book_type: self.book_type.clone(),
             tap_num: self.tap_num,
             tags: self.tags.clone(),
             like_num: self.like_num,
+            word_count: self.word_count,
             collect_num: self.collect_num,
             comment_num: self.comment_num,
             comment_long_num: self.comment_long_num,
@@ -104,6 +113,7 @@ impl Book {
     }
     pub fn get_basic(&self) -> BasicBook {
         BasicBook {
+            finish: self.finish,
             id: self.id.clone().unwrap_or(String::from("你好")), // Extract the value from Option, defaulting to an empty string if None
             book_name: self.book_name.clone(),
             cover_url: self.cover_url.clone(),

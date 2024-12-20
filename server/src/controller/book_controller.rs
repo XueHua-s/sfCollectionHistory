@@ -104,7 +104,7 @@ async fn to_book_maintenance (book_id: web::Path<i32>) -> impl Responder {
             } else if err.to_string() == "book_state_maintenance" {
                 HttpResponse::Ok().json(response::ResponseMsg::new("该书处于维护中。".to_string(), err.to_string()))
             } else if err.to_string() == "maintenance_max" {
-                HttpResponse::Ok().json(response::ResponseMsg::new("已太监, 不维护, 请先恢复正常更新。".to_string(), err.to_string()))
+                HttpResponse::Ok().json(response::ResponseMsg::new("已太监/已完结, 不维护, 请先恢复正常更新。".to_string(), err.to_string()))
             } else {
                 HttpResponse::InternalServerError()
                     .json(response::ResponseError::new(err.to_string()))

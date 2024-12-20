@@ -29,13 +29,13 @@ impl BookServices {
 
         // 查询books表中指定bid的最新记录(通过rid降序排列, rid是自增记录id)
         let sql = "
-        SELECT id, b_id, book_name, cover_url, book_type, tap_num, tags, like_num, 
+        SELECT id, b_id, book_name, cover_url, finish, word_count, book_type, tap_num, tags, like_num, 
             collect_num, comment_num, comment_long_num, monthly_pass, 
             monthly_ticket_ranking, reward_ranking, 
             DATE_FORMAT(created_time, '%Y-%m-%d') as created_time,
             DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time,
             r_id,
-            label_type
+            label_type,
         FROM books
         WHERE b_id = ?
         ORDER BY r_id DESC
@@ -59,7 +59,7 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
         let default_sql = "
-                SELECT id, b_id, book_name, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time, label_type
+                SELECT id, b_id, book_name, finish, word_count, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time, label_type
                 FROM books
                 WHERE created_time BETWEEN ? AND ? AND b_id = ?
                 ORDER BY created_time DESC;
@@ -78,6 +78,8 @@ impl BookServices {
                         DATE_FORMAT(created_time, '{}') AS month,
                         id,
                         b_id,
+                        finish,
+                        word_count,
                         book_name,
                         book_type,
                         tags,
@@ -103,6 +105,8 @@ impl BookServices {
                     MAX(CASE WHEN rn = 1 THEN book_name END) AS book_name,
                     MAX(CASE WHEN rn = 1 THEN book_type END) AS book_type,
                     MAX(CASE WHEN rn = 1 THEN tags END) AS tags,
+                    MAX(CASE WHEN rn = 1 THEN word_count END) AS word_count,
+                    MAX(CASE WHEN rn = 1 THEN finish END) AS finish,
                     MAX(like_num) AS like_num,
                     MAX(collect_num) AS collect_num,
                     MAX(comment_num) AS comment_num,
@@ -183,7 +187,9 @@ impl BookServices {
                 tags, 
                 like_num, 
                 collect_num, 
-                comment_num, 
+                comment_num,
+                word_count,
+                finish, 
                 comment_long_num, 
                 DATE_FORMAT(created_time, '%Y-%m-%d') as created_time, 
                 tap_num, 
@@ -250,7 +256,7 @@ impl BookServices {
             if current_date
                 .signed_duration_since(new_record_time)
                 .num_days()
-                < 30
+                < 30 && book.finish == 0
             {
                 // 本书处于维护中
                 return Err(actix_web::error::ErrorBadRequest("book_state_maintenance"));
@@ -258,7 +264,7 @@ impl BookServices {
             if current_date
                 .signed_duration_since(lash_update_time)
                 .num_days()
-                > 30
+                > 30 || book.finish == 1
             {
                 // 本书当前状态超过最大维护时间
                 return Err(actix_web::error::ErrorBadRequest("maintenance_max"));
@@ -275,7 +281,7 @@ impl BookServices {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
 
-        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time, label_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        let sql = "INSERT INTO books (id, b_id, book_name, cover_url, book_type, tags, like_num, collect_num, comment_num, comment_long_num, created_time, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, last_update_time, label_type, word_count, finish) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         sqlx::query(sql)
             .bind(new_book.id.clone())
             .bind(new_book.b_id) // 使用b_id而不是id
@@ -294,6 +300,8 @@ impl BookServices {
             .bind(new_book.reward_ranking)
             .bind(&new_book.last_update_time)
             .bind(&new_book.label_type)
+            .bind(new_book.word_count)
+            .bind(new_book.finish)
             .execute(&*client)
             .await
             .map_err(|e| {
@@ -328,11 +336,11 @@ impl BookServices {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
-        // 分组查询最新的创建时间那条, 取最近更新时间 >= 30天的。
+        // 分组查询最新的创建时间那条, 取最近更新时间 >= 30天的连载中作品。
         let sql = "
            SELECT b_id, MAX(created_time) as max_created_time
             FROM books
-            WHERE last_update_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            WHERE last_update_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND finish = 0
             GROUP BY b_id;
         ";
 
@@ -421,6 +429,8 @@ impl BookServices {
         let mut reward_ranking = 0;
         let mut last_update_time = String::new();
         let mut label_type = String::new();
+        let mut finish = 0;
+        let mut word_count = 0;
         // 发送 GET 请求
         let response = reqwest::get(&url)
             .await
@@ -466,6 +476,15 @@ impl BookServices {
                         // 最后更新时间
                         if let Some(date_part) = last_update_time.split_whitespace().next() {
                             last_update_time = date_part.to_string();
+                        }
+                    } else if text.starts_with("字数：") {
+                        let word_count_text = text.replace("字数：", "").trim().to_string();
+                        if let Some(end_index) = word_count_text.find('[') {
+                            word_count = word_count_text[..end_index].trim().parse::<i32>().unwrap_or(0);
+                            finish = if word_count_text[end_index..].contains("已完结") { 1 } else { 0 };
+                        } else {
+                            word_count = word_count_text.parse::<i32>().unwrap_or(0);
+                            finish = 0; // Default to false if not specified
                         }
                     }
                 }
@@ -634,6 +653,8 @@ impl BookServices {
             monthly_ticket_ranking,
             reward_ranking,
             last_update_time,
+            finish,
+            word_count,
             created_time: String::new(),
             label_type: label_type.clone(), // Automatically generate the current time in YYYY-MM-DD format
         });
