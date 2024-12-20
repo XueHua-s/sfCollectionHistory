@@ -1,14 +1,59 @@
-"use client";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
-
-const RankingFilter = ()=> {
-  const searchParams = useSearchParams();
-  useEffect(() => {
-    const search = searchParams.get('search');
-    console.log(search);
-    
-  }, [])
-  return <div>排行榜</div>
+'use client';
+import React, { useEffect, useState } from 'react';
+import { getRankRecord } from '@/client_api/rank';
+import { BookRank } from '@/types/book';
+export type SortType =
+  | 'like_num'
+  | 'collect_num'
+  | 'comment_num'
+  | 'comment_long_num'
+  | 'tap_num'
+  | 'monthly_pass'
+  | 'monthly_ticket_ranking'
+  | 'reward_ranking';
+interface RankingFilterProps {
+  sortType: SortType;
+  labelType: string;
 }
-export default RankingFilter
+// const searchParams = useSearchParams();
+const RankingFilter: React.FC<RankingFilterProps> = ({
+  sortType,
+  labelType,
+}) => {
+  const [ranks, setRanks] = useState<BookRank[]>([]);
+  const loadRankRecord = async () => {
+    const rankRes = await getRankRecord({
+      current: 1,
+      size: 10,
+      sort_type: sortType,
+      label_type: labelType,
+      book_name: '',
+    });
+    if (rankRes.code === 'success') {
+      setRanks(rankRes?.data?.list ?? []);
+    }
+  };
+  useEffect(() => {
+    loadRankRecord();
+  }, []);
+  return (
+    <div
+      className={
+        'book-ranks grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4'
+      }>
+      {ranks.map((item) => (
+        <div
+          className="book cursor-pointer flex flex-col items-center"
+          key={item.id}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className={'w-full'} alt={item.book_name} src={item.cover_url} />
+          <span className={'text-14px mt-2'}>
+            <span>No.{item.rank}</span>
+            {item.book_name}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+export default RankingFilter;
