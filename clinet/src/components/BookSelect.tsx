@@ -32,7 +32,7 @@ const BookSelect: React.FC<BookSelectProps> = ({ value, onChange }) => {
         message.error('Failed to fetch data');
       }
     } catch (error: any) {
-      console.log(error)
+      console.log(error);
       message.error('An error occurred');
     } finally {
       setLoading(false);
@@ -54,8 +54,7 @@ const BookSelect: React.FC<BookSelectProps> = ({ value, onChange }) => {
       onSearch={debouncedFetchBooks}
       loading={loading}
       filterOption={false}
-      style={{ width: 300 }}
-    >
+      style={{ width: 300 }}>
       <Option key={'0000'} value={''}>
         不对比
       </Option>

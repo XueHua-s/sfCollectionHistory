@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { getRankRecord } from '@/client_api/rank';
 import { BookRank } from '@/types/book';
-import {useRouter} from "next/navigation";
+import { useRouter } from 'next/navigation';
 export type SortType =
   | 'like_num'
   | 'collect_num'

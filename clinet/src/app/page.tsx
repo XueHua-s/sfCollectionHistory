@@ -1,7 +1,7 @@
 import RankingFilter from '@/components/RankingFilter';
 import SuspenseSpin from '@/components/SuspenseSpin';
 import { Suspense } from 'react';
-import {Tooltip} from "antd";
+import { Tooltip } from 'antd';
 export default function Home() {
   return (
     <div className={'flex flex-col'}>
@@ -27,10 +27,9 @@ export default function Home() {
               alt={'支付宝赞助'}
             />
           </Tooltip>
-
         </div>
       </div>
-      <Suspense fallback={<SuspenseSpin/>}>
+      <Suspense fallback={<SuspenseSpin />}>
         <div>
           <h2 className={'text-theme-brand text-[24px]'}>收藏排名</h2>
           <RankingFilter labelType={''} sortType={'reward_ranking'} />

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { DatePicker, Tooltip, Select, Button, Spin, message } from 'antd';
 import { getBookDetail, getBookDetailHistory } from '@/client_api/detail';
 import { BookInfo } from '@/types/book';
@@ -9,6 +9,7 @@ import { alignBookData, bookIsEunuch } from '@/untils';
 import DataLineCharts from '@/components/DataLineCharts';
 import dayjs from 'dayjs';
 import BookSelect from '@/components/BookSelect';
+import SuspenseSpin from '@/components/SuspenseSpin';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -290,5 +291,11 @@ const BookDetailPage = () => {
     </div>
   );
 };
-
-export default BookDetailPage;
+const DetailPage = () => {
+  return (
+    <Suspense fallback={<SuspenseSpin />}>
+      <BookDetailPage />
+    </Suspense>
+  );
+};
+export default DetailPage
