@@ -21,14 +21,18 @@ const DataLineCharts: React.FC<DataLineChartsProps> = ({
       const options = {
         title: {
           text: title || 'Stacked Line',
+          top: '0%', // 增加标题的顶部留白
         },
         tooltip: {
           trigger: 'axis',
         },
         legend: {
           data: seriesData.map((item) => item.name),
+          top: '6%', // 图例的顶部留白
+          left: 'center', // 图例居中
         },
         grid: {
+          top: '15%', // 调整顶部留白
           left: '3%',
           right: '4%',
           bottom: '3%',
