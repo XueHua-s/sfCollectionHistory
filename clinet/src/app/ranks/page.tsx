@@ -9,7 +9,7 @@ const Ranks = () => {
   const [ loading, setLoading ] = useState<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
   // 创建一个状态来存储高度
-  const [tableHeight, setTableHeight] = useState(0);
+  const [tableHeight, setTableHeight] = useState(600);
   const [bookName, setBookName] = useState('');
   const [sortType, setSortType] = useState('collect_num');
   const [labelType, setLabelType] = useState('');
@@ -40,7 +40,7 @@ const Ranks = () => {
   const columns = useMemo(() => {
     return [
       {
-        width: 150,
+        width: 80,
         title: '排名',
         dataIndex: 'rank',
         fixed: true,
@@ -166,7 +166,7 @@ const Ranks = () => {
     }
   };
   useEffect(() => {
-    loadTableData()
+    loadTableData(1, 10)
   }, []);
   return (
     <div className={'p-2 w-full h-full flex flex-col books-rank'}>
@@ -210,7 +210,7 @@ const Ranks = () => {
           </div>
         </div>
       </div>
-      <div ref={tableRef} className="table flex-1 flex-col relative mt-4 w-full overflow-hidden">
+      <div ref={tableRef} className="table h-[80vh] relative mt-4 w-full overflow-hidden">
         <div className={'absolute w-full h-full'}>
           <Table
             // key={tableHeight}
@@ -220,7 +220,7 @@ const Ranks = () => {
             scroll={{ x: columns.reduce((count, item) => {
                 count += item?.width as number;
                 return count;
-              }, 0), y: tableHeight - 70 }}// 确保x值足够宽，y值足够高
+              }, 0), y: tableHeight - 100 }}// 确保x值足够宽，y值足够高
             columns={columns}
             className={'w-full'}
             bordered
