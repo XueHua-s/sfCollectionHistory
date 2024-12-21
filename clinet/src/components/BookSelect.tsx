@@ -7,11 +7,12 @@ import { debounce } from 'lodash';
 const { Option } = Select;
 
 interface BookSelectProps {
+  className: string;
   value: string;
   onChange: (value: string) => void;
 }
 
-const BookSelect: React.FC<BookSelectProps> = ({ value, onChange }) => {
+const BookSelect: React.FC<BookSelectProps> = ({ value, className, onChange }) => {
   const [options, setOptions] = useState<BookRank[]>([] as BookRank[]);
   const [loading, setLoading] = useState(false);
 
@@ -47,14 +48,14 @@ const BookSelect: React.FC<BookSelectProps> = ({ value, onChange }) => {
 
   return (
     <Select
+      className={className}
       showSearch
-      placeholder="Select a book"
+      placeholder="请选择作品"
       value={value}
       onChange={onChange}
       onSearch={debouncedFetchBooks}
       loading={loading}
-      filterOption={false}
-      style={{ width: 300 }}>
+      filterOption={false}>
       <Option key={'0000'} value={''}>
         不对比
       </Option>

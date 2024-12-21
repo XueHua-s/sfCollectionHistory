@@ -217,7 +217,9 @@ const BookDetailPage = () => {
         </div>
         <div className="line flex items-center">
           <div className="label w-[100px]">对比作品:</div>
-          <BookSelect value={otherBookId} onChange={setOtherBookId} />
+          <div className="flex-1">
+            <BookSelect className={'w-[200px]'} value={otherBookId} onChange={setOtherBookId} />
+          </div>
         </div>
         <div>
           <Button

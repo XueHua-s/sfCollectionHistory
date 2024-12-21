@@ -12,8 +12,6 @@ const Ranks = () => {
   const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
-  // 创建一个状态来存储高度
-  const [tableHeight, setTableHeight] = useState(600);
   const [bookName, setBookName] = useState('');
   const [sortType, setSortType] = useState('collect_num');
   const [labelType, setLabelType] = useState('');
@@ -21,26 +19,6 @@ const Ranks = () => {
   const [current, setCurrent] = useState(1);
   const [size, setSize] = useState(20);
   const [total, setTotal] = useState(0);
-  // 使用useEffect来监听高度变化
-  useEffect(() => {
-    // 定义一个函数来更新高度
-    const updateHeight = () => {
-      if (tableRef.current) {
-        setTableHeight(tableRef.current.clientHeight);
-      }
-    };
-
-    // 监听窗口大小变化，以便在窗口大小改变时更新高度
-    window.addEventListener('resize', updateHeight);
-
-    // 初始调用更新高度
-    updateHeight();
-
-    // 清理函数，在组件卸载时移除事件监听器
-    return () => {
-      window.removeEventListener('resize', updateHeight);
-    };
-  }, []);
   const columns = useMemo(() => {
     const cols = [
       {
@@ -349,7 +327,7 @@ const Ranks = () => {
                 count += item?.width as number;
                 return count;
               }, 0),
-              y: tableHeight - 100,
+              y: "calc(80vh - 100px)",
             }} // 确保x值足够宽，y值足够高
             columns={columns}
             className={'w-full'}
@@ -360,7 +338,7 @@ const Ranks = () => {
           />
         </div>
       </div>
-      <div className="page flex justify-end">
+      <div className="page mt-6 flex justify-end">
         <Pagination
           onChange={(page, size) => {
             loadTableData(page, size);
