@@ -62,7 +62,7 @@ impl BookServices {
                 SELECT id, b_id, book_name, finish, word_count, book_type, tags, like_num, collect_num, comment_num, comment_long_num, tap_num, monthly_pass, monthly_ticket_ranking, reward_ranking, cover_url, DATE_FORMAT(last_update_time, '%Y-%m-%d') AS last_update_time, DATE_FORMAT(created_time, '%Y-%m-%d') AS created_time, label_type
                 FROM books
                 WHERE created_time BETWEEN ? AND ? AND b_id = ?
-                ORDER BY created_time DESC;
+                ORDER BY created_time ASC;
             ".to_string();
         let sql = match query.group_type {
             Some(1) => default_sql,
@@ -93,7 +93,7 @@ impl BookServices {
                         CAST(reward_ranking AS SIGNED) AS reward_ranking,
                         cover_url,
                         last_update_time,
-                         ROW_NUMBER() OVER (PARTITION BY DATE_FORMAT(created_time, '{}') ORDER BY r_id DESC) AS rn,
+                         ROW_NUMBER() OVER (PARTITION BY DATE_FORMAT(created_time, '{}') ORDER BY r_id ASC) AS rn,
                         r_id,
                         label_type
                     FROM books
