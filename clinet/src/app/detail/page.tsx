@@ -281,6 +281,9 @@ const BookDetailPage = () => {
           <div className="date-line shadow p-4">
             {getBookDataLine('monthly_pass', '月票数据')}
           </div>
+          <div className="date-line shadow p-4">
+            {getBookDataLine('word_count', '字数数据')}
+          </div>
           {/*<div className="date-line shadow p-4">*/}
           {/*  {getBookDataLine('monthly_ticket_ranking', '月票排行数据')}*/}
           {/*</div>*/}
@@ -294,8 +297,8 @@ const BookDetailPage = () => {
 };
 const DetailPage = () => {
   return (
-    <Suspense fallback={<SuspenseSpin />}>
-      <BookDetailPage />
+    <Suspense fallback={<SuspenseSpin/>}>
+    <BookDetailPage />
     </Suspense>
   );
 };
