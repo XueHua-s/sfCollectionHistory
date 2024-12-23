@@ -178,8 +178,7 @@ const BookDetailPage = () => {
             seriesData={[
               getChartService(
                 bookDetail?.book_name ?? '',
-                booksHistory,
-                'collect_num',
+                booksHistory, key,
               ),
             ]}
           />
