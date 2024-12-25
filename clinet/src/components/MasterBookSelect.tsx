@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Select, message } from 'antd';
 import { MasterBook, queryMasterBook } from '@/client_api/search';
 import { debounce } from 'lodash';
+import { SearchOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -36,15 +37,10 @@ const MasterBookSelect: React.FC<BookSelectProps> = ({
       setLoading(false);
     }
   };
-
   const debouncedFetchBooks = useCallback(debounce(fetchBooks, 300), []);
-
-  useEffect(() => {
-    fetchBooks();
-  }, []);
-
   return (
     <Select
+      suffixIcon={<SearchOutlined />}
       className={className}
       showSearch
       placeholder="输入关键词, 搜索作品"

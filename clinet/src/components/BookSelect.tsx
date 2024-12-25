@@ -3,17 +3,21 @@ import { Select, message } from 'antd';
 import { getRankRecord } from '@/client_api/rank';
 import { BookRank } from '@/types/book';
 import { debounce } from 'lodash';
-
+import { SearchOutlined } from '@ant-design/icons';
 const { Option } = Select;
 
 interface BookSelectProps {
+  isStartLoading?: boolean;
   className: string;
+  showNone?: boolean;
   value: string;
   onChange: (value: string) => void;
 }
 
 const BookSelect: React.FC<BookSelectProps> = ({
   value,
+  isStartLoading = true,
+  showNone = true,
   className,
   onChange,
 }) => {
@@ -47,11 +51,14 @@ const BookSelect: React.FC<BookSelectProps> = ({
   const debouncedFetchBooks = useCallback(debounce(fetchBooks, 300), []);
 
   useEffect(() => {
-    fetchBooks();
+    if (isStartLoading) {
+      fetchBooks();
+    }
   }, []);
 
   return (
     <Select
+      suffixIcon={<SearchOutlined />}
       className={className}
       showSearch
       placeholder="请选择作品"
@@ -60,9 +67,12 @@ const BookSelect: React.FC<BookSelectProps> = ({
       onSearch={debouncedFetchBooks}
       loading={loading}
       filterOption={false}>
-      <Option key={'0000'} value={''}>
-        不对比
-      </Option>
+      {showNone && (
+        <Option key={'0000'} value={''}>
+          不对比
+        </Option>
+      )}
+
       {options.map((book: BookRank) => (
         <Option key={book.b_id} value={book.b_id}>
           {book.book_name}

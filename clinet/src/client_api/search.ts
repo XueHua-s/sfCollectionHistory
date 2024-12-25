@@ -1,6 +1,6 @@
 import { ResponseData } from '@/types/response';
 import request from '@/request';
-import {BookInfo} from "@/types/book";
+import { BookInfo } from '@/types/book';
 export interface MasterBook {
   b_id: number;
   clear_title: string;
@@ -19,10 +19,16 @@ export const queryMasterBook = (
     },
   });
 // 收录作品
-export const entranceBook = (
+export const entranceBook = (bookId: string): Promise<ResponseData<BookInfo>> =>
+  request({
+    url: `/api/books/add/${bookId}`,
+    method: 'POST',
+  });
+// 维护作品
+export const maintenanceBook = (
   bookId: string,
 ): Promise<ResponseData<BookInfo>> =>
   request({
-    url: `/api/books/add/${bookId}`,
+    url: `/api/books/maintenance/${bookId}`,
     method: 'POST',
   });

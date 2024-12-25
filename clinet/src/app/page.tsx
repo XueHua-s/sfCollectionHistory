@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { Tooltip } from 'antd';
 import MasterBookSelect from '@/components/MasterBookSelect';
 import InclusionEntrance from '@/components/InclusionEntrance';
+import InclusionMaintenance from '@/components/InclusionMaintenance';
 export default function Home() {
   return (
     <div className={'flex flex-col'}>
@@ -40,6 +41,11 @@ export default function Home() {
         <div className={'submit-in'}>
           <Suspense fallback={<SuspenseSpin />}>
             <InclusionEntrance />
+          </Suspense>
+          <Suspense fallback={<SuspenseSpin />}>
+            <div className={'mt-4'}>
+              <InclusionMaintenance />
+            </div>
           </Suspense>
         </div>
       </div>
