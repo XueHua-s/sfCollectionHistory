@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Select, message } from 'antd';
 import { MasterBook, queryMasterBook } from '@/client_api/search';
 import { debounce } from 'lodash';
