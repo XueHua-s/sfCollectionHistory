@@ -176,10 +176,7 @@ const BookDetailPage = () => {
             xData={getChartX(booksHistory)}
             title={label}
             seriesData={[
-              getChartService(
-                bookDetail?.book_name ?? '',
-                booksHistory, key,
-              ),
+              getChartService(bookDetail?.book_name ?? '', booksHistory, key),
             ]}
           />
         );
@@ -217,7 +214,11 @@ const BookDetailPage = () => {
         <div className="line flex items-center">
           <div className="label w-[100px]">对比作品:</div>
           <div className="flex-1">
-            <BookSelect className={'w-[200px]'} value={otherBookId} onChange={setOtherBookId} />
+            <BookSelect
+              className={'w-[200px]'}
+              value={otherBookId}
+              onChange={setOtherBookId}
+            />
           </div>
         </div>
         <div>
@@ -297,9 +298,9 @@ const BookDetailPage = () => {
 };
 const DetailPage = () => {
   return (
-    <Suspense fallback={<SuspenseSpin/>}>
-    <BookDetailPage />
+    <Suspense fallback={<SuspenseSpin />}>
+      <BookDetailPage />
     </Suspense>
   );
 };
-export default DetailPage
+export default DetailPage;

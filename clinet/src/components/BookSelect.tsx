@@ -12,7 +12,11 @@ interface BookSelectProps {
   onChange: (value: string) => void;
 }
 
-const BookSelect: React.FC<BookSelectProps> = ({ value, className, onChange }) => {
+const BookSelect: React.FC<BookSelectProps> = ({
+  value,
+  className,
+  onChange,
+}) => {
   const [options, setOptions] = useState<BookRank[]>([] as BookRank[]);
   const [loading, setLoading] = useState(false);
 

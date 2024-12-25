@@ -327,7 +327,7 @@ const Ranks = () => {
                 count += item?.width as number;
                 return count;
               }, 0),
-              y: "calc(80vh - 100px)",
+              y: 'calc(80vh - 100px)',
             }} // 确保x值足够宽，y值足够高
             columns={columns}
             className={'w-full'}
@@ -343,7 +343,7 @@ const Ranks = () => {
           onChange={(page, size) => {
             loadTableData(page, size);
           }}
-          defaultCurrent={current}
+          current={current}
           total={total}
           pageSize={size}
         />
