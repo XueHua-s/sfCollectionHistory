@@ -10,6 +10,7 @@ use scraper::{Html, Selector};
 use serde_json;
 use sqlx;
 use std::env;
+use futures::try_join;
 pub struct BookServices;
 impl BookServices {
     // 暴露给控制器, 用于收录书本的api
@@ -146,92 +147,98 @@ impl BookServices {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
+
         let sort_type = match query.sort_type.as_str() {
             "monthly_ticket_ranking" => "ASC",
             "reward_ranking" => "ASC",
             _ => "DESC",
         };
+
         let label_query = if query.label_type.is_empty() {
             format!("LIKE '%{}%'", &query.label_type)
         } else {
             format!("= '{}'", &query.label_type)
         };
-        let base_query = format!("WITH LatestBooks AS (
-                SELECT 
-                    *,
-                    ROW_NUMBER() OVER (PARTITION BY b_id ORDER BY r_id DESC) AS rn
-                FROM 
-                    books
-            ),
-            LabelBooks AS (
-                SELECT * FROM LatestBooks WHERE label_type {}
-            ),
-            RankedBooks AS (
-                SELECT 
-                    *,
-                    ROW_NUMBER() OVER (ORDER BY {} {}) AS `rank`
-                FROM 
-                    LabelBooks
-                WHERE 
-                    rn = 1
-            )", &label_query, &query.sort_type, sort_type).to_string();
-        let mut list_sql = base_query.clone();
-        list_sql.push_str(
-            "
+
+        let base_query = format!(
+            "WITH LatestBooks AS (
             SELECT 
-                id, 
-                b_id, 
-                book_name, 
-                book_type, 
-                `rank`,
-                tags, 
-                like_num, 
-                collect_num, 
-                comment_num,
-                word_count,
-                finish, 
-                comment_long_num, 
-                DATE_FORMAT(created_time, '%Y-%m-%d') as created_time, 
-                tap_num, 
-                cover_url, 
-                monthly_pass, 
-                monthly_ticket_ranking, 
-                reward_ranking, 
-                DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time, 
-                label_type
+                *,
+                ROW_NUMBER() OVER (PARTITION BY b_id ORDER BY r_id DESC) AS rn
             FROM 
-                RankedBooks
+                books
+        ),
+        LabelBooks AS (
+            SELECT * FROM LatestBooks WHERE label_type {}
+        ),
+        RankedBooks AS (
+            SELECT 
+                *,
+                ROW_NUMBER() OVER (ORDER BY {} {}) AS `rank`
+            FROM 
+                LabelBooks
             WHERE 
-                book_name LIKE ?
-            LIMIT ? OFFSET ?;",
+                rn = 1
+        )",
+            &label_query, &query.sort_type, sort_type
         );
-        let rows: Vec<BookRank> = sqlx::query_as::<_, BookRank>(&list_sql)
-            // .bind(format!("%{}%", query.label_type)) // Correctly bind the label_type with wildcard
-            .bind(format!("%{}%", query.book_name)) // Correctly bind the book_name with wildcard
-            .bind(query.size)
-            .bind((query.current - 1) * query.size)
-            .fetch_all(&*client)
-            .await
-            .map_err(|e| {
-                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
-            })?;
-        let mut total_num_query = base_query.clone();
-        total_num_query.push_str(
-            "SELECT 
+
+        let list_query = format!(
+            "{} 
+        SELECT 
+            id, 
+            b_id, 
+            book_name, 
+            book_type, 
+            `rank`,
+            tags, 
+            like_num, 
+            collect_num, 
+            comment_num,
+            word_count,
+            finish, 
+            comment_long_num, 
+            DATE_FORMAT(created_time, '%Y-%m-%d') as created_time, 
+            tap_num, 
+            cover_url, 
+            monthly_pass, 
+            monthly_ticket_ranking, 
+            reward_ranking, 
+            DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time, 
+            label_type
+        FROM 
+            RankedBooks
+        WHERE 
+            book_name LIKE ?
+        LIMIT ? OFFSET ?;",
+            base_query
+        );
+
+        let total_query = format!(
+            "{} 
+        SELECT 
             COUNT(*) AS total
         FROM 
             RankedBooks
         WHERE 
             book_name LIKE ?;",
+            base_query
         );
-        let total_num: i32 = sqlx::query_scalar(&total_num_query)
-            // .bind(format!("%{}%", query.label_type))
-            .bind(format!("%{}%", query.book_name))
-            .fetch_one(&*client)
-            .await
-            .map_err(|e| {
-                actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
-            })?;
+
+        // 并行执行查询
+        let (rows, total_num) = try_join!(
+            sqlx::query_as::<_, BookRank>(&list_query)
+                .bind(format!("%{}%", query.book_name))
+                .bind(query.size)
+                .bind((query.current - 1) * query.size)
+                .fetch_all(&*client),
+            sqlx::query_scalar(&total_query)
+                .bind(format!("%{}%", query.book_name))
+                .fetch_one(&*client)
+        )
+        .map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
+        })?;
 
         Ok(ResponsPagerList::new(ResponsPagerListFrom {
             current: query.current,
@@ -256,7 +263,8 @@ impl BookServices {
             if current_date
                 .signed_duration_since(new_record_time)
                 .num_days()
-                < 30 && book.finish == 0
+                < 30
+                && book.finish == 0
             {
                 // 本书处于维护中
                 return Err(actix_web::error::ErrorBadRequest("book_state_maintenance"));
@@ -264,7 +272,8 @@ impl BookServices {
             if current_date
                 .signed_duration_since(lash_update_time)
                 .num_days()
-                > 30 || book.finish == 1
+                > 30
+                || book.finish == 1
             {
                 // 本书当前状态超过最大维护时间
                 return Err(actix_web::error::ErrorBadRequest("maintenance_max"));
@@ -376,10 +385,12 @@ impl BookServices {
         Ok(labels)
     }
     // 关键词搜索主站的书本
-    pub async fn keyword_search_master_books(keyword: String) -> Result<actix_web::web::Json<Vec<serde_json::Value>>, actix_web::Error> {
+    pub async fn keyword_search_master_books(
+        keyword: String,
+    ) -> Result<actix_web::web::Json<Vec<serde_json::Value>>, actix_web::Error> {
         let base_head_url = env::var("SF_DATA_BASE_URL").expect("未获取到sf接口网址");
         let api_url = format!("{}/ajax/ashx/GetRelateWord.ashx?t=1", base_head_url);
-        
+
         let form = [("keyword", keyword)];
         let response = reqwest::Client::new()
             .post(&api_url)
@@ -389,23 +400,32 @@ impl BookServices {
             .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
 
         if response.status().is_success() {
-            let json_response: Vec<serde_json::Value> = response.json().await.map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+            let json_response: Vec<serde_json::Value> = response
+                .json()
+                .await
+                .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
             let re = Regex::new(r"/(\d+)").unwrap(); // Regex to extract bid from URL
-            let result: Vec<serde_json::Value> = json_response.into_iter().map(|item| {
-                let url = item["url"].as_str().unwrap_or("");
-                let b_id = re.captures(url)
-                    .and_then(|caps| caps.get(1))
-                    .map_or(0, |m| m.as_str().parse::<i32>().unwrap_or(0));
-                serde_json::json!({
-                    "b_id": b_id,
-                    "clear_title": item["clearTitle"],
-                    "title": item["title"],
-                    "url": item["url"]
+            let result: Vec<serde_json::Value> = json_response
+                .into_iter()
+                .map(|item| {
+                    let url = item["url"].as_str().unwrap_or("");
+                    let b_id = re
+                        .captures(url)
+                        .and_then(|caps| caps.get(1))
+                        .map_or(0, |m| m.as_str().parse::<i32>().unwrap_or(0));
+                    serde_json::json!({
+                        "b_id": b_id,
+                        "clear_title": item["clearTitle"],
+                        "title": item["title"],
+                        "url": item["url"]
+                    })
                 })
-            }).collect();
+                .collect();
             Ok(actix_web::web::Json(result))
         } else {
-            Err(actix_web::error::ErrorInternalServerError("Failed to fetch data from external API"))
+            Err(actix_web::error::ErrorInternalServerError(
+                "Failed to fetch data from external API",
+            ))
         }
     }
     // 爬虫, 爬取这本书的数据
@@ -478,7 +498,8 @@ impl BookServices {
                             last_update_time = date_part.to_string();
                         }
                     } else if text.starts_with("字数：") {
-                        let word_count_regex = regex::Regex::new(r"字数：(\d+)(?:字)?\[(.*?)\]").unwrap();
+                        let word_count_regex =
+                            regex::Regex::new(r"字数：(\d+)(?:字)?\[(.*?)\]").unwrap();
                         if let Some(captures) = word_count_regex.captures(text) {
                             word_count = captures[1].parse::<i32>().unwrap_or(0);
                             finish = if &captures[2] == "已完结" { 1 } else { 0 };
