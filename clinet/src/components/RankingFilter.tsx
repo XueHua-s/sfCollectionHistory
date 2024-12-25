@@ -23,11 +23,11 @@ const RankingFilter: React.FC<RankingFilterProps> = ({
   labelType,
 }) => {
   const router = useRouter();
-  const [ loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const [ranks, setRanks] = useState<BookRank[]>([]);
   const loadRankRecord = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const rankRes = await getRankRecord({
         current: 1,
         size: 10,
@@ -39,9 +39,9 @@ const RankingFilter: React.FC<RankingFilterProps> = ({
         setRanks(rankRes?.data?.list ?? []);
       }
     } catch (err) {
-      console.log(err)
+      console.log(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
   useEffect(() => {
