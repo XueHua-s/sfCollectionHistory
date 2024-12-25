@@ -141,90 +141,91 @@ impl BookServices {
         Ok(rows)
     }
     // 分页查询书本排行榜
+
     pub async fn query_page_paging_rank(
         query: dto::book::PagingQueryRankingDto,
     ) -> Result<ResponsPagerList<BookRank>, actix_web::Error> {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
-
+    
         let sort_type = match query.sort_type.as_str() {
             "monthly_ticket_ranking" => "ASC",
             "reward_ranking" => "ASC",
             _ => "DESC",
         };
-
+    
         let label_query = if query.label_type.is_empty() {
             format!("LIKE '%{}%'", &query.label_type)
         } else {
             format!("= '{}'", &query.label_type)
         };
-
+    
         let base_query = format!(
             "WITH LatestBooks AS (
-            SELECT 
-                *,
-                ROW_NUMBER() OVER (PARTITION BY b_id ORDER BY r_id DESC) AS rn
-            FROM 
-                books
-        ),
-        LabelBooks AS (
-            SELECT * FROM LatestBooks WHERE label_type {}
-        ),
-        RankedBooks AS (
-            SELECT 
-                *,
-                ROW_NUMBER() OVER (ORDER BY {} {}) AS `rank`
-            FROM 
-                LabelBooks
-            WHERE 
-                rn = 1
-        )",
+                SELECT 
+                    *,
+                    ROW_NUMBER() OVER (PARTITION BY b_id ORDER BY r_id DESC) AS rn
+                FROM 
+                    books
+            ),
+            LabelBooks AS (
+                SELECT * FROM LatestBooks WHERE label_type {}
+            ),
+            RankedBooks AS (
+                SELECT 
+                    *,
+                    ROW_NUMBER() OVER (ORDER BY {} {}) AS `rank`
+                FROM 
+                    LabelBooks
+                WHERE 
+                    rn = 1
+            )",
             &label_query, &query.sort_type, sort_type
         );
-
+    
         let list_query = format!(
             "{} 
-        SELECT 
-            id, 
-            b_id, 
-            book_name, 
-            book_type, 
-            `rank`,
-            tags, 
-            like_num, 
-            collect_num, 
-            comment_num,
-            word_count,
-            finish, 
-            comment_long_num, 
-            DATE_FORMAT(created_time, '%Y-%m-%d') as created_time, 
-            tap_num, 
-            cover_url, 
-            monthly_pass, 
-            monthly_ticket_ranking, 
-            reward_ranking, 
-            DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time, 
-            label_type
-        FROM 
-            RankedBooks
-        WHERE 
-            book_name LIKE ?
-        LIMIT ? OFFSET ?;",
+            SELECT 
+                id, 
+                b_id, 
+                book_name, 
+                book_type, 
+                `rank`,
+                tags, 
+                like_num, 
+                collect_num, 
+                comment_num,
+                word_count,
+                finish, 
+                comment_long_num, 
+                DATE_FORMAT(created_time, '%Y-%m-%d') as created_time, 
+                tap_num, 
+                cover_url, 
+                monthly_pass, 
+                monthly_ticket_ranking, 
+                reward_ranking, 
+                DATE_FORMAT(last_update_time, '%Y-%m-%d') as last_update_time, 
+                label_type
+            FROM 
+                RankedBooks
+            WHERE 
+                book_name LIKE ?
+            LIMIT ? OFFSET ?;",
             base_query
         );
-
+    
         let total_query = format!(
             "{} 
-        SELECT 
-            COUNT(*) AS total
-        FROM 
-            RankedBooks
-        WHERE 
-            book_name LIKE ?;",
+            SELECT 
+                COUNT(*) AS total
+            FROM 
+                RankedBooks
+            WHERE 
+                book_name LIKE ?;",
             base_query
         );
-
+    
         // 并行执行查询
         let (rows, total_num) = try_join!(
             sqlx::query_as::<_, BookRank>(&list_query)
@@ -232,14 +233,14 @@ impl BookServices {
                 .bind(query.size)
                 .bind((query.current - 1) * query.size)
                 .fetch_all(&*client),
-            sqlx::query_scalar(&total_query)
+            sqlx::query_scalar::<_, i64>(&total_query) // Specify the expected return type as i64
                 .bind(format!("%{}%", query.book_name))
                 .fetch_one(&*client)
         )
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
         })?;
-
+    
         Ok(ResponsPagerList::new(ResponsPagerListFrom {
             current: query.current,
             size: query.size,
