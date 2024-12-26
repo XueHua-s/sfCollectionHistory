@@ -18,7 +18,9 @@
     --foreground: #ededed;
   }
 }
-
+.master-book-container span {
+  color: #e29464;
+}
 body {
   color: var(--foreground);
   background-color: #fdf8e9;

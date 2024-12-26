@@ -1,42 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Select, message } from 'antd';
-import { getRankRecord } from '@/client_api/rank';
-import { BookRank } from '@/types/book';
+import { MasterBook, queryMasterBook } from '@/client_api/search';
 import { debounce } from 'lodash';
 import { SearchOutlined } from '@ant-design/icons';
+
 const { Option } = Select;
 
 interface BookSelectProps {
-  isStartLoading?: boolean;
   className: string;
-  showNone?: boolean;
   value: string;
   onChange: (value: string) => void;
 }
 
-const BookSelect: React.FC<BookSelectProps> = ({
+const MasterBookSelect: React.FC<BookSelectProps> = ({
   value,
-  isStartLoading = true,
-  showNone = true,
   className,
   onChange,
 }) => {
-  const [options, setOptions] = useState<BookRank[]>([] as BookRank[]);
+  const [options, setOptions] = useState<MasterBook[]>([] as MasterBook[]);
   const [loading, setLoading] = useState(false);
 
   const fetchBooks = async (bookName = '') => {
     setLoading(true);
     try {
-      const response = await getRankRecord({
-        current: 1,
-        size: 10,
-        book_name: bookName,
-        sort_type: 'collect_num',
-        label_type: '',
-      });
+      const response = await queryMasterBook(bookName);
 
-      if (response.code === 'success' && response?.data?.list) {
-        setOptions(response?.data?.list);
+      if (response.code === 'success' && response?.data) {
+        setOptions(response?.data);
       } else {
         message.error('Failed to fetch data');
       }
@@ -47,39 +37,29 @@ const BookSelect: React.FC<BookSelectProps> = ({
       setLoading(false);
     }
   };
-
   const debouncedFetchBooks = useCallback(debounce(fetchBooks, 300), []);
-
-  useEffect(() => {
-    if (isStartLoading) {
-      fetchBooks();
-    }
-  }, []);
-
   return (
     <Select
       suffixIcon={<SearchOutlined />}
       className={className}
       showSearch
-      placeholder="请选择作品"
+      placeholder="输入关键词, 搜索作品"
       value={value}
       onChange={onChange}
       onSearch={debouncedFetchBooks}
       loading={loading}
       filterOption={false}>
-      {showNone && (
-        <Option key={'0000'} value={''}>
-          不对比
-        </Option>
-      )}
-
-      {options.map((book: BookRank) => (
+      {options.map((book: MasterBook) => (
         <Option key={book.b_id} value={book.b_id}>
-          {book.book_name}
+          <div
+            className={'master-book-container'}
+            dangerouslySetInnerHTML={{
+              __html: book.title,
+            }}></div>
         </Option>
       ))}
     </Select>
   );
 };
 
-export default BookSelect;
+export default MasterBookSelect;
