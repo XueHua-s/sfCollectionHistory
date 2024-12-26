@@ -1,7 +1,8 @@
 # SFACG Data Analysis Project
 
 本项目是用于爬取并分析 [菠萝包轻小说](https://book.sfacg.com/) 网站数据，并为作者提供实时的数据上涨情况以及与同行作品的对比分析。
-
+## 生产环境地址
+[SF数据网](http://sfacg.cloud/ranks)
 ## 目录结构
 
 - `client` 文件夹：基于 Next.js 技术 SSG 构建的网页客户端，使用了 TailwindCSS 和 Ant Design 组件库。
