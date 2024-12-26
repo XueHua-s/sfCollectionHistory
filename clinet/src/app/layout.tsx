@@ -9,7 +9,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-cn">
     <head>
       <meta charSet="utf-8"/>
       <meta name="baidu-site-verification" content="codeva-FWMMQRBATs"/>
