@@ -8,19 +8,35 @@ use tokio::{
     time::{sleep_until, Duration, Instant},
 };
 async fn push_sf_book_new_data(bid: i32) -> Result<(), Error> {
-    let mut book = book_services::BookServices::find_sf_book(bid).await;
-    while book.is_err() {
-        book = book_services::BookServices::find_sf_book(bid).await;
-    }
-    let book = book?;
+    // 最大重试次数
+    const MAX_RETRIES: u32 = 20;
+    let book = {
+        let mut retries = 0;
+        loop {
+            match book_services::BookServices::find_sf_book(bid).await {
+                Ok(book) => break book,
+                Err(e) => {
+                    retries += 1;
+                    if retries >= MAX_RETRIES {
+                        return Err(e);
+                    }
+                }
+            }
+        }
+    };
+    let mut retries = 0;
     loop {
-        if book_services::BookServices::insert_sf_book(book.clone())
-            .await
-            .is_ok()
-        {
-            break;
+        match book_services::BookServices::insert_sf_book(book.clone()).await {
+            Ok(_) => break,
+            Err(e) => {
+                retries += 1;
+                if retries >= MAX_RETRIES {
+                    return Err(e);
+                }
+            }
         }
     }
+
     Ok(())
 }
 async fn async_fn() -> Result<(), actix_web::Error> {
