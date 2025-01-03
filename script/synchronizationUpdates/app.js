@@ -18,7 +18,7 @@ const analyzeBooks = async (pageNum) => {
         const fetch = async () => {
           try {
             const number = match[1]; // 提取的数字
-            const data2 = await axios.post('http://server.xhblog.top:18080/api/books/add/' + number)
+            const data2 = await axios.post('https://api.sfacg.cloud:18080/api/books/add/' + number)
             console.log(data2.data, '添加结果')
             resolve()
           } catch (err) {
