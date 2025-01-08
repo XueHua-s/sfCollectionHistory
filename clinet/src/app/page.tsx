@@ -31,8 +31,20 @@ export default function Home() {
               />
             </Tooltip>
           </div>
-          <div className={'flex-1'}></div>
+          <div className={'flex-1'}>
+          </div>
         </div>
+      </div>
+      <div className="group-link">
+        <h1 className={'text-theme-brand text-[24px]'}>官方群</h1>
+        <div>
+          <a className={'text-grayLine'}
+             href="http://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=_NZERm3fGETb7y1GM4gPsLxLPLrDDZe5&authKey=TvhtgSEdswRDdeMspCpD6O8ubPecckM5Sk0znzlViXzi%2FUg7IgXPIjTKq93uuy6X&noverify=0&group_code=996997193"
+             target={'_blank'}>加入QQ群</a>
+        </div>
+        <p className={'text-grayLine mt-4'}>
+          如果有问题和建议反馈, 请加入群聊交流。暂无其它反馈渠道。
+        </p>
       </div>
       <div className="submitEntry mb-4">
         {/*提交入口*/}
