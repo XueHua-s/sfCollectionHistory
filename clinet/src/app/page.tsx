@@ -50,7 +50,7 @@ export default function Home() {
       </div>
       <Suspense fallback={<SuspenseSpin />}>
         <div>
-          <h2 className={'text-theme-brand text-[24px]'}>收藏排名</h2>
+          <h2 className={'text-theme-brand text-[24px]'}>打赏排名</h2>
           <RankingFilter labelType={''} sortType={'reward_ranking'} />
         </div>
         <div className={'mt-4'}>
