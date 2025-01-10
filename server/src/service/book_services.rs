@@ -4,13 +4,13 @@ use crate::model::book::BookRank;
 use crate::model::response::{ResponsPagerList, ResponsPagerListFrom};
 use crate::{model::book::Book, mysql::client};
 use actix_web::{self};
+use futures::try_join;
 use regex::Regex;
 use reqwest;
 use scraper::{Html, Selector};
 use serde_json;
 use sqlx;
 use std::env;
-use futures::try_join;
 pub struct BookServices;
 impl BookServices {
     // 暴露给控制器, 用于收录书本的api
@@ -148,19 +148,19 @@ impl BookServices {
         let client = client::connect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database connection error: {}", e))
         })?;
-    
+
         let sort_type = match query.sort_type.as_str() {
             "monthly_ticket_ranking" => "ASC",
             "reward_ranking" => "ASC",
             _ => "DESC",
         };
-    
+
         let label_query = if query.label_type.is_empty() {
             format!("LIKE '%{}%'", &query.label_type)
         } else {
             format!("= '{}'", &query.label_type)
         };
-    
+
         let base_query = format!(
             "WITH LatestBooks AS (
                 SELECT 
@@ -183,7 +183,7 @@ impl BookServices {
             )",
             &label_query, &query.sort_type, sort_type
         );
-    
+
         let list_query = format!(
             "{} 
             SELECT 
@@ -214,7 +214,7 @@ impl BookServices {
             LIMIT ? OFFSET ?;",
             base_query
         );
-    
+
         let total_query = format!(
             "{} 
             SELECT 
@@ -225,7 +225,7 @@ impl BookServices {
                 book_name LIKE ?;",
             base_query
         );
-    
+
         // 并行执行查询
         let (rows, total_num) = try_join!(
             sqlx::query_as::<_, BookRank>(&list_query)
@@ -240,7 +240,7 @@ impl BookServices {
         .map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Database query error: {}", e))
         })?;
-    
+
         Ok(ResponsPagerList::new(ResponsPagerListFrom {
             current: query.current,
             size: query.size,
@@ -435,7 +435,9 @@ impl BookServices {
         let mb_head_url = env::var("SF_MB_BASE_URL").expect("未获取到sf接口网址");
         let base_url = format!("{}{}", base_head_url.clone(), "/Novel/");
         let label_base_url = format!("{}{}", mb_head_url, "/b/");
-        let url = format!("{}{}", base_url, book_id); // Corrected the URL construction
+        let url = format!("{}{}", base_url, book_id);
+        let label_info_url = format!("{}{}", label_base_url, book_id);
+        // Corrected the URL construction
         let mut title = String::from("");
         let mut cover_url = String::new();
         let mut book_type = String::new();
@@ -452,11 +454,17 @@ impl BookServices {
         let mut label_type = String::new();
         let mut finish = 0;
         let mut word_count = 0;
-        // 发送 GET 请求
-        let response = reqwest::get(&url)
+        // 并发请求
+        let master_web_feature = reqwest::get(&url);
+        let mobild_web_feature = reqwest::get(&label_info_url);
+        // 等待主站请求响应
+        let response = master_web_feature
             .await
             .map_err(|e| actix_web::error::ErrorInternalServerError(e))?; // Map reqwest error to actix_web error
-
+        // 等待移动端请求响应                                                                 // 爬取移动端数据
+        let label_info_response = mobild_web_feature
+            .await
+            .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
         // 确保请求成功
         if response.status().is_success() {
             // 获取响应的文本内容
@@ -479,19 +487,6 @@ impl BookServices {
                 if let Some(text) = element.text().next() {
                     if text.starts_with("类型：") {
                         book_type = text.replace("类型：", "").trim().to_string();
-                    } else if text.starts_with("点击：") {
-                        let click_text = text.replace("点击：", "").trim().to_string();
-                        click_count = match click_text.strip_suffix("万") {
-                            Some(value) => {
-                                (value.trim().parse::<f32>().unwrap_or(0.0) * 10_000.0) as i32
-                            }
-                            None => match click_text.strip_suffix("千") {
-                                Some(value) => {
-                                    (value.trim().parse::<f32>().unwrap_or(0.0) * 1_000.0) as i32
-                                }
-                                None => click_text.parse::<i32>().unwrap_or(0),
-                            },
-                        };
                     } else if text.starts_with("更新：") {
                         last_update_time = text.replace("更新：", "").trim().to_string();
                         // 最后更新时间
@@ -620,12 +615,6 @@ impl BookServices {
                     "Failed to fetch bonus info",
                 ));
             }
-            // 爬取移动端数据
-            let label_info_url = format!("{}{}", label_base_url, book_id);
-            let label_info_response = reqwest::get(&label_info_url)
-                .await
-                .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
-
             if label_info_response.status().is_success() {
                 let label_info_body = label_info_response
                     .text()
@@ -644,6 +633,17 @@ impl BookServices {
                             .join(", ")
                             .trim()
                             .to_string();
+                    }
+                }
+                // 解析点击数
+                let click_count_selector = Selector::parse("span.book_info3").unwrap();
+                if let Some(element) = document.select(&click_count_selector).next() {
+                    if let Some(text) = element.text().next() {
+                        // Extract the click count from the text
+                        let parts: Vec<&str> = text.split('/').collect();
+                        if parts.len() > 2 {
+                            click_count = parts[2].trim().parse::<i32>().unwrap_or(0);
+                        }
                     }
                 }
             } else {
